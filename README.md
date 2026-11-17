@@ -10,6 +10,15 @@ the castle to win. The king's son copies everything you do, and the axolotls you
 
 - **In a browser:** open `index.html`. It works offline.
 - **On a Mac:** double-click **Play Banana King 3D.app**.
+- **On iPad and iPhone:** open `ios/BananaKing3D.xcodeproj` in Xcode and press Run. The app shows the same
+  `index.html` full screen. To regenerate the Xcode project after editing `ios/project.yml`, run `xcodegen` in `ios/`.
+
+## App Store
+
+- `appstore/APP_STORE.md`: every field to paste into App Store Connect.
+- `appstore/screenshots/`: the iPad 13" and iPhone 6.3" screenshots, made by `ios/make-screenshots.sh`
+  with the game's photo mode.
+- [PRIVACY.md](PRIVACY.md) and [SUPPORT.md](SUPPORT.md): the privacy policy and support pages the App Store links to.
 
 | Keyboard | Touch | What it does |
 | --- | --- | --- |

@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
 <title>Banana King 3D</title>
 <style>
-  html,body{margin:0;height:100%;background:#1b1033;overflow:hidden;touch-action:none;font-family:system-ui,-apple-system,sans-serif;color:#fff}
+  html,body{margin:0;height:100%;background:#1b1033;overflow:hidden;touch-action:none;font-family:system-ui,-apple-system,sans-serif;color:#fff;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none;-webkit-tap-highlight-color:transparent}
   canvas{display:block}
   .o{text-shadow:0 2px 0 #1b1033,0 -2px 0 #1b1033,2px 0 0 #1b1033,-2px 0 0 #1b1033,0 4px 8px #0008;font-weight:900}
   #hud{position:fixed;left:calc(16px + env(safe-area-inset-left));top:calc(12px + env(safe-area-inset-top));font-size:26px;line-height:1.25;display:none}
   #hud .m{color:#7dff8a;font-size:34px} #hud .b{color:#ffe14d} #hud .g{color:#ffd447;font-size:22px} #hud .a{color:#ff9cc8;font-size:22px} #hud .x{color:#ffb3b3;font-size:17px}
   #time{position:fixed;right:calc(16px + env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));font-size:24px;display:none;text-align:right}
   #time small{display:block;font-size:13px;opacity:.85;font-weight:700}
-  #bar{position:fixed;left:50%;top:18px;width:min(40vw,420px);height:12px;margin-left:calc(min(40vw,420px)/-2);background:#0007;border-radius:8px;display:none}
+  #bar{position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top));width:min(40vw,420px);height:12px;margin-left:calc(min(40vw,420px)/-2);background:#0007;border-radius:8px;display:none}
   #fill{height:100%;width:0;background:linear-gradient(90deg,#ffd447,#7dff6a);border-radius:8px}
   #bar span{position:absolute;top:-9px;font-size:20px} #crown{left:0;margin-left:-10px} #castle{right:-28px}
   #overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:3vh 12px 4vh;box-sizing:border-box;text-align:center;background:radial-gradient(ellipse at center,#1b103300 35%,#1b1033cc 100%);pointer-events:none}
@@ -22,6 +22,11 @@
   #overlay .go{font-size:min(5vw,36px);margin-top:.8em;animation:blink 1s steps(2) infinite}
   #overlay .by{color:#ffb37a}
   #hint{position:fixed;left:0;right:0;bottom:14px;text-align:center;font-size:17px;transition:opacity 1s}
+  #overlay .pv{pointer-events:auto;font:700 15px system-ui,-apple-system,sans-serif;color:#fff;background:#0007;border:2px solid #fff6;border-radius:18px;padding:8px 18px;margin-top:14px;text-shadow:none}
+  #privacy{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#1b1033cc;padding:16px;box-sizing:border-box}
+  #privacy div{max-width:520px;max-height:100%;overflow:auto;background:#2b1a6b;border:3px solid #ffd447;border-radius:18px;padding:20px 24px;font:16px/1.5 system-ui,-apple-system,sans-serif}
+  #privacy h2{margin:0 0 8px;color:#ffe14d} #privacy p{margin:.6em 0}
+  #privacy button{font:800 18px system-ui;color:#1b1033;background:#ffd447;border:0;border-radius:14px;padding:10px 26px;margin-top:6px}
   @keyframes bob{50%{transform:translateY(-10px) rotate(-1deg)}} @keyframes blink{50%{opacity:.2}}
   .tb{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom));width:72px;height:72px;border-radius:50%;border:3px solid #fff8;background:#0007;color:#fff;font-size:28px;display:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
   #bl{left:calc(14px + env(safe-area-inset-left))}#bu{left:calc(92px + env(safe-area-inset-left));bottom:calc(70px + env(safe-area-inset-bottom))}#br{left:calc(170px + env(safe-area-inset-left))}
@@ -30,6 +35,17 @@
   .touch #time small{display:none}
   .touch.playing .tb{display:block}
   .touch #hint{bottom:calc(150px + env(safe-area-inset-bottom));font-size:14px;padding:0 12px}
+  /* tablets (iPad): bigger buttons and text */
+  @media (min-width: 700px) and (min-height: 700px){
+    .tb{width:96px;height:96px;font-size:36px}
+    #bu{left:calc(124px + env(safe-area-inset-left));bottom:calc(92px + env(safe-area-inset-bottom))}
+    #br{left:calc(234px + env(safe-area-inset-left))}
+    #bj{width:136px;height:136px;font-size:28px}
+    #bv{width:72px;height:72px;font-size:28px;top:calc(92px + env(safe-area-inset-top))}
+    #hud{font-size:30px} #hud .m{font-size:44px} #hud .g,#hud .a{font-size:26px} #hud .x{font-size:20px}
+    #time{font-size:30px}
+    .touch #hint{bottom:calc(206px + env(safe-area-inset-bottom));font-size:18px}
+  }
 </style>
 </head>
 <body>
@@ -38,6 +54,13 @@
 <div id="bar"><div id="fill"></div><span id="crown">👑</span><span id="castle">🏰</span></div>
 <div id="overlay" class="o"></div>
 <div id="hint" class="o"></div>
+<div id="privacy"><div>
+  <h2>Privacy</h2>
+  <p>Banana King 3D does not collect, store or share any information about you.</p>
+  <p>There are no accounts, no ads, no tracking and no in-app purchases, and the game never connects to the internet. Everything happens on this device, and nothing is kept after you close the game.</p>
+  <p>Questions? See github.com/gphelps-dev/banana-king-3d.</p>
+  <button id="privacyClose">Close</button>
+</div></div>
 <button class="tb" id="bl">◀</button><button class="tb" id="bu">▲</button><button class="tb" id="br">▶</button><button class="tb" id="bv">👁</button><button class="tb" id="bj">JUMP</button>
 <script src="lib/three.min.js"></script>
 <script>
@@ -62,9 +85,16 @@ renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadow
 renderer.outputEncoding = THREE.sRGBEncoding;
 document.body.insertBefore(renderer.domElement, document.body.firstChild);
 const scene = new THREE.Scene();
-scene.fog = new THREE.Fog(0xd58ee6, 55, 260);
-const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 2500);
-addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); });
+// Things farther than 160 away are not drawn at all (the fog hides them first), which keeps phones and iPads fast.
+scene.fog = new THREE.Fog(0xd58ee6, 45, 150);
+const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 160);
+function fitView(){ // in portrait (tall screens) widen the view so you can still see the course
+  const a = innerWidth / innerHeight;
+  renderer.setSize(innerWidth, innerHeight); camera.aspect = a;
+  camera.fov = Math.max(65, Math.min(85, 2 * Math.atan(Math.tan(27.5 * Math.PI / 180) / a) * 180 / Math.PI));
+  camera.updateProjectionMatrix();
+}
+addEventListener('resize', fitView); fitView();
 
 function canvasTex(w, h, draw){
   const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
@@ -241,11 +271,15 @@ function MB(x, top, d, s, mat){ // a block you parkour on: money, banana, gold o
 }
 function spikes(x, top, d, width, rows, kind){
   const g = new THREE.Group(), grass = kind === 'grass', n = Math.max(1, Math.round(width/.85)), sp = width/n, dep = rows*.85;
+  // the whole row is one instanced mesh (one draw call) instead of one mesh per spike: much faster on phones
+  const o = new THREE.Object3D(), mats = [];
   for(let r=0;r<rows;r++) for(let i=0;i<n;i++){
     const cx = (i+.5)*sp - width/2, cz = (r-(rows-1)/2)*.85;
-    if(grass) for(let b=0;b<3;b++){ const c = new THREE.Mesh(G.blade, M.grass), h = rnd(.75,1.1); c.scale.set(1,h,1); c.position.set(cx + (b-1)*.24 + rnd(-.05,.05), .65*h, cz + rnd(-.2,.2)); c.rotation.set(rnd(-.18,.18), 0, rnd(-.22,.22)); g.add(c); }
-    else { const c = new THREE.Mesh(G.stoneSpike, M.stoneSpike), h = rnd(.85,1.1); c.scale.set(1,h,1); c.position.set(cx, .52*h, cz); c.rotation.y = rnd(0,3); c.castShadow = true; g.add(c); }
+    if(grass) for(let b=0;b<3;b++){ const h = rnd(.75,1.1); o.scale.set(1,h,1); o.position.set(cx + (b-1)*.24 + rnd(-.05,.05), .65*h, cz + rnd(-.2,.2)); o.rotation.set(rnd(-.18,.18), 0, rnd(-.22,.22)); o.updateMatrix(); mats.push(o.matrix.clone()); }
+    else { const h = rnd(.85,1.1); o.scale.set(1,h,1); o.position.set(cx, .52*h, cz); o.rotation.set(0, rnd(0,3), 0); o.updateMatrix(); mats.push(o.matrix.clone()); }
   }
+  const im = new THREE.InstancedMesh(grass ? G.blade : G.stoneSpike, grass ? M.grass : M.stoneSpike, mats.length);
+  mats.forEach((m,i) => im.setMatrixAt(i, m)); im.castShadow = !grass; im.frustumCulled = false; g.add(im);
   const plate = new THREE.Mesh(new THREE.BoxGeometry(width, .1, dep), grass ? M.grassPlate : M.stonePlate); plate.position.y = .05; g.add(plate);
   g.position.set(x, top, -d); scene.add(g);
   hazards.push({x0:x-width/2+.14, x1:x+width/2-.14, y0:top, y1:top+.8, z0:-d-dep/2+.14, z1:-d+dep/2-.14});
@@ -285,20 +319,30 @@ function bounce(x, top, d){
   g.position.set(x, top, -d); scene.add(g);
   pads.push({x, top, z:-d, g, squash:0});
 }
+let chandArmGeo = null;
+function batch(geo, mat, list, parent){ // many copies of one shape, drawn in a single draw call
+  const im = new THREE.InstancedMesh(geo, mat, list.length);
+  list.forEach((o,i) => { o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
+  im.frustumCulled = false; parent.add(im); return im;
+}
 function chandelier(x, top, d){
   const y = top + 7.2, root = new THREE.Group(), sw = new THREE.Group(); root.position.set(x, y+8, -d); root.add(sw); scene.add(root);
   const chainHi = new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,80,5), M.gold); chainHi.position.y = 40; root.add(chainHi);
   const chain = new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,6.6,5), M.gold); chain.position.y = -3.3; sw.add(chain);
   const torus = (r, yy) => { const t = new THREE.Mesh(new THREE.TorusGeometry(r,.09,8,28), M.gold); t.rotation.x = Math.PI/2; t.position.y = yy; sw.add(t); };
   torus(1.7, -8); torus(1.0, -8.9);
-  const up = new THREE.Vector3(0,1,0), apex = new THREE.Vector3(0,-6.6,0);
+  // arms, bulbs and bananas: each kind drawn as one instanced batch (much faster on phones)
+  const up = new THREE.Vector3(0,1,0), apex = new THREE.Vector3(0,-6.6,0), arms = [], bulbs = [], bans = [];
+  const armLen = new THREE.Vector3(1.7, -8, 0).sub(apex).length();
   for(let i=0;i<8;i++){
-    const a = i/8*Math.PI*2, pt = new THREE.Vector3(Math.cos(a)*1.7, -8, Math.sin(a)*1.7), dir = pt.clone().sub(apex), len = dir.length();
-    const arm = new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,len,5), M.gold); arm.position.copy(apex).addScaledVector(dir,.5); arm.quaternion.setFromUnitVectors(up, dir.normalize()); sw.add(arm);
-    const bulb = new THREE.Mesh(G.ball, M.bulb); bulb.scale.setScalar(2.8); bulb.position.set(pt.x, -7.82, pt.z); sw.add(bulb);
-    const b = new THREE.Mesh(G.banana, M.banana), a2 = a + Math.PI/8; b.scale.setScalar(1.6); b.position.set(Math.cos(a2)*1.75, -8.65, Math.sin(a2)*1.75); b.rotation.set(0, -a2, BAN_UP); sw.add(b);
+    const a = i/8*Math.PI*2, pt = new THREE.Vector3(Math.cos(a)*1.7, -8, Math.sin(a)*1.7), dir = pt.clone().sub(apex);
+    const arm = new THREE.Object3D(); arm.position.copy(apex).addScaledVector(dir,.5); arm.quaternion.setFromUnitVectors(up, dir.normalize()); arms.push(arm);
+    const bulb = new THREE.Object3D(); bulb.scale.setScalar(2.8); bulb.position.set(pt.x, -7.82, pt.z); bulbs.push(bulb);
+    const b = new THREE.Object3D(), a2 = a + Math.PI/8; b.scale.setScalar(1.6); b.position.set(Math.cos(a2)*1.75, -8.65, Math.sin(a2)*1.75); b.rotation.set(0, -a2, BAN_UP); bans.push(b);
   }
-  for(let i=0;i<5;i++){ const b = new THREE.Mesh(G.banana, M.banana), a = i/5*Math.PI*2; b.scale.setScalar(1.4); b.position.set(Math.cos(a)*1.0, -9.5, Math.sin(a)*1.0); b.rotation.set(0, -a, BAN_UP); sw.add(b); }
+  for(let i=0;i<5;i++){ const b = new THREE.Object3D(), a = i/5*Math.PI*2; b.scale.setScalar(1.4); b.position.set(Math.cos(a)*1.0, -9.5, Math.sin(a)*1.0); b.rotation.set(0, -a, BAN_UP); bans.push(b); }
+  batch(chandArmGeo || (chandArmGeo = new THREE.CylinderGeometry(.04,.04,armLen,5)), M.gold, arms, sw);
+  batch(G.ball, M.bulb, bulbs, sw); batch(G.banana, M.banana, bans, sw);
   const orb = new THREE.Mesh(G.head, M.gold); orb.position.y = -6.6; sw.add(orb);
   const gl = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0xffe98a, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:.7})); gl.scale.set(8,8,1); gl.position.y = -8.3; sw.add(gl);
   chands.push({x, y, z:-d, sw, t:rnd(.5,2.5), ph:d});
@@ -309,9 +353,11 @@ function checkpoint(d, top, w){ // a stone king statue that turns to gold
   const ped = new THREE.Mesh(new THREE.CylinderGeometry(.6,.7,.6,10), M.stone); ped.position.set(x, top+.3, -d-.6); ped.castShadow = true; scene.add(ped);
   checkpoints.push({d, top, x:0, mat, reached:false, sx:x});
 }
+const PUFFS = [[0,0,0,1.2],[1.1,.1,.2,.9],[-1.1,.05,-.1,.95],[.45,.5,0,.8],[-.45,.35,.3,.7]], puffO = new THREE.Object3D();
+let skyPuffs = null;
 function cloud(x, y, d, s){ // the blue stuff
   const g = new THREE.Group();
-  [[0,0,0,1.2],[1.1,.1,.2,.9],[-1.1,.05,-.1,.95],[.45,.5,0,.8],[-.45,.35,.3,.7]].forEach(a => { const m = new THREE.Mesh(G.cloud, M.cloud); m.position.set(a[0],a[1],a[2]); m.scale.set(a[3],a[3]*.7,a[3]); g.add(m); });
+  PUFFS.forEach(a => { const m = new THREE.Mesh(G.cloud, M.cloud); m.position.set(a[0],a[1],a[2]); m.scale.set(a[3],a[3]*.7,a[3]); g.add(m); });
   g.position.set(x, y, -d); g.scale.setScalar(s); scene.add(g); return g;
 }
 function bananaGuy(x, top, d){ // the banana buddy with lips
@@ -365,7 +411,7 @@ function SP(x, top, d, w, len){ // a platform made of blocky stone, with crystal
     const mine = cells.filter((c,i) => k === 0 ? i % 9 > 1 : i % 9 === k); if(!mine.length) return;
     const im = new THREE.InstancedMesh(G.cube, mat, mine.length);
     mine.forEach((c,i) => { o.position.set(c[0], c[1], c[2]); o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
-    im.castShadow = true; scene.add(im);
+    im.castShadow = true; im.frustumCulled = false; scene.add(im);
   });
   solids.push({x0:x-w/2, x1:x+w/2, y0:top-1, y1:top, z0:-(d+len), z1:-d});
 }
@@ -505,15 +551,17 @@ function axolotl(x, top, d, pool){ // find all 5!
   // sky decor: giant bananas, blue clouds, a cloud sea, and giant spikes poking up from below (like the drawing)
   for(let i=0;i<11;i++){ const b = new THREE.Mesh(G.banana, M.banana); b.scale.setScalar(rnd(10,20)); b.position.set((i%2?1:-1)*rnd(28,50), rnd(2,30), -(8 + i*30)); b.rotation.set(rnd(0,6),rnd(0,6),rnd(0,6)); scene.add(b); spinners.push(b); }
   const courseY = d => d < 50 ? 0 : d < 88 ? 3 : d < 234 ? 8.5 : d < 250 ? 10.5 : d < 287 ? 11 : 13;
-  for(let i=0;i<31;i++){ const d = -10 + i*11.5 + rnd(-3,3), g = cloud((i%2?1:-1)*rnd(9,24), courseY(d) + rnd(3,13), d, rnd(1.2,2.6)); skyClouds.push({g, bx:g.position.x, ph:i}); }
+  // the blue sky clouds: every puff of every cloud in one instanced mesh (one draw call)
+  for(let i=0;i<31;i++){ const d = -10 + i*11.5 + rnd(-3,3); skyClouds.push({bx:(i%2?1:-1)*rnd(9,24), y:courseY(d) + rnd(3,13), z:-d, s:rnd(1.2,2.6), ph:i}); }
+  skyPuffs = new THREE.InstancedMesh(G.cloud, M.cloud, skyClouds.length * PUFFS.length); skyPuffs.frustumCulled = false; scene.add(skyPuffs);
   const sea = new THREE.InstancedMesh(G.cloud, L(0xeaf4ff, {emissive:0x40508a}), 260), o = new THREE.Object3D();
   for(let i=0;i<260;i++){ o.position.set(rnd(-110,110), rnd(-36,-16), rnd(60,-420)); o.scale.set(rnd(8,20), rnd(3,6), rnd(7,14)); o.rotation.set(0,0,0); o.updateMatrix(); sea.setMatrixAt(i, o.matrix); }
-  scene.add(sea);
+  sea.frustumCulled = false; scene.add(sea);
   const cone7 = new THREE.ConeGeometry(1,1,7);
   [[M.grass, 0], [M.stoneSpike, 1]].forEach(([mat, k]) => { const n = 40, im = new THREE.InstancedMesh(cone7, mat, n);
     for(let i=0;i<n;i++){ const d = -20 + (i*2+k)*(370/(n*2)) + rnd(-3,3), tip = courseY(d) - rnd(2,13), h = tip + 48, r = rnd(2.2,4.6);
       o.position.set((i%2?1:-1)*rnd(11,46), -48 + h/2, -d); o.scale.set(r,h,r); o.rotation.set(rnd(-.06,.06), rnd(0,3), rnd(-.06,.06)); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }
-    scene.add(im); });
+    im.frustumCulled = false; scene.add(im); });
 })();
 
 // ---------- the green sun ----------
@@ -558,6 +606,7 @@ let ac = null;
 function beep(f, d, type, vol, slide, delay){
   try{
     if(!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+    if(ac.state === 'suspended') ac.resume();
     const t0 = ac.currentTime + (delay || 0), o = ac.createOscillator(), g = ac.createGain();
     o.type = type || 'square'; o.frequency.setValueAtTime(f, t0);
     if(slide) o.frequency.exponentialRampToValueAtTime(slide, t0 + d);
@@ -567,7 +616,14 @@ function beep(f, d, type, vol, slide, delay){
 }
 
 // ---------- input ----------
+let privacyOpen = false;
+function setPrivacy(open){ privacyOpen = open; $('privacy').style.display = open ? 'flex' : 'none'; }
+document.addEventListener('click', e => {
+  if(e.target.id === 'privacyBtn'){ e.stopPropagation(); setPrivacy(true); }
+  if(e.target.id === 'privacyClose'){ e.stopPropagation(); setPrivacy(false); }
+});
 function pressJump(){
+  if(privacyOpen) return;
   if(state === 'title'){ state = 'play'; resetGame(); beep(520,.15,'square',.05,880); showUI(); return; }
   if(state === 'win'){ if(winT > 1.5){ state = 'play'; resetGame(); showUI(); } return; }
   jumpBuf = .13;
@@ -619,10 +675,18 @@ function floatText(str, x, y, z, color){
   const s = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false, transparent:true, fog:false})); s.scale.set(4.5,1.12,1); s.position.set(x,y,z); s.renderOrder = 10; scene.add(s);
   floats.push({s, life:1});
 }
-const ITEM = {bill:{geo:G.bill, mat:M.bill, s:1}, banana:{geo:G.banana, mat:M.banana, s:1.25}, gold:{geo:G.goldBar, mat:M.gold, s:1.15}, silver:{geo:G.coin, mat:M.silver, s:1.3}};
+// Falling things: every item of one kind is drawn together as one instanced mesh (one draw call per kind).
+const ITEM = {bill:{geo:G.bill, mat:M.bill, s:1, cap:260}, banana:{geo:G.banana, mat:M.banana, s:1.25, cap:120}, gold:{geo:G.goldBar, mat:M.gold, s:1.15, cap:140}, silver:{geo:G.coin, mat:M.silver, s:1.3, cap:60}};
+for(const t in ITEM){ const I = ITEM[t]; I.im = new THREE.InstancedMesh(I.geo, I.mat, I.cap); I.im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+  I.im.count = 0; I.im.frustumCulled = false; I.im.castShadow = t === 'gold'; scene.add(I.im); }
+function drawItems(){
+  const k = {bill:0, banana:0, gold:0, silver:0};
+  for(const it of items){ const I = ITEM[it.type]; if(k[it.type] >= I.cap) continue; it.m.updateMatrix(); I.im.setMatrixAt(k[it.type]++, it.m.matrix); }
+  for(const t in ITEM){ ITEM[t].im.count = k[t]; ITEM[t].im.instanceMatrix.needsUpdate = true; }
+}
 function spawnItem(type, x, y, z, o){
   let m = pools[type].pop();
-  if(!m){ m = new THREE.Mesh(ITEM[type].geo, ITEM[type].mat); m.castShadow = type === 'gold'; scene.add(m); }
+  if(!m) m = new THREE.Object3D();   // just a position/rotation/size; drawItems() draws it
   m.visible = true; m.scale.setScalar(ITEM[type].s); m.rotation.set(rnd(0,6), rnd(0,6), rnd(0,6));
   const it = Object.assign({type, m, x, y, z, vx:0, vz:0, vy: type === 'bill' ? -3 : -rnd(6,8), ph:rnd(0,6), landed:false, life:6}, o);
   items.push(it); return it;
@@ -696,10 +760,12 @@ function update(dt){
     r.t -= dt;
     if(r.t <= 0){ r.t = rnd(.25,.55); if(Math.abs(r.z - p.z) < 38) spawnItem(Math.random() < .3 ? 'gold' : 'bill', r.x + r.dir*.6, r.g.position.y + 1.8, r.z + rnd(-.5,.5), {vy:rnd(4,7), vx:r.dir*rnd(7,15), vz:rnd(-5,5), drop:true}); }
   }
-  for(const c of skyClouds) c.g.position.x = c.bx + Math.sin(T*.25 + c.ph)*1.5;
+  skyClouds.forEach((c, i) => { const cx = c.bx + Math.sin(T*.25 + c.ph)*1.5;
+    PUFFS.forEach((q, j) => { puffO.position.set(cx + q[0]*c.s, c.y + q[1]*c.s, c.z + q[2]*c.s); puffO.scale.set(q[3]*c.s, q[3]*.7*c.s, q[3]*c.s); puffO.updateMatrix(); skyPuffs.setMatrixAt(i*PUFFS.length + j, puffO.matrix); }); });
+  skyPuffs.instanceMatrix.needsUpdate = true;
   miniKings.forEach(mk => { const h = Math.abs(Math.sin(T*(state === 'win' ? 7 : 3) + mk.ph)); mk.k.g.position.y = 13 + h*(state === 'win' ? .9 : .25); animKing(mk.k, 0, 0, state === 'win' || h > .6, T); });
   spinners.forEach((b,i) => { b.rotation.x += dt*.15; b.rotation.y += dt*(.1 + i*.01); });
-  sunRays.rotation.z += dt*.15; const sc = 1 + Math.sin(T*1.5)*.02; sun.scale.set(sc,sc,sc);
+  sunRays.rotation.z += dt*.15; const sc = .27*(1 + Math.sin(T*1.5)*.02); sun.scale.set(sc,sc,sc);
   if(jackpot){ const fade = !firstPerson && state === 'play' && -p.z > jackpot.d0 - 3.5 && -p.z < jackpot.d1 + 1; for(const m of [M.house, M.houseRoof]){ m.opacity += ((fade ? .22 : 1) - m.opacity)*Math.min(1, dt*8); m.depthWrite = m.opacity > .9; } }
 
   // rain: money + bananas from the sky
@@ -814,7 +880,8 @@ function update(dt){
     jackpot.taken = true; jackpot.glow.visible = false; money += 100;
     [784,988,1175,1568].forEach((f,i) => beep(f,.18,'square',.06,null,i*.08));
     floatText('JACKPOT! +$100', p.x, p.y+2.4, p.z, '#7dff8a'); burst(p.x, p.y+1.5, p.z, 24, 4, [1,0,4]);
-    for(let i=0;i<14;i++) spawnItem(i%3 ? 'bill' : 'gold', rnd(-1.6,1.6), jackpot.top + rnd(1.4,2.6), jackpot.z + rnd(-2,2), {vy:rnd(0,2), vx:rnd(-1,1), vz:rnd(-1,1), drop:true});
+    // the money bursts up out of the house and rains back down on the king
+    for(let i=0;i<14;i++) spawnItem(i%3 ? 'bill' : 'gold', rnd(-1.6,1.6), jackpot.top + rnd(2.8,3.4), jackpot.z + rnd(-2,2), {vy:rnd(4,7), vx:rnd(-2,2), vz:rnd(-2,2), drop:true});
   }
   // spikes, cars + falling
   for(const h of hazards){
@@ -858,7 +925,7 @@ function update(dt){
 // ---------- camera + render ----------
 const lookV = new THREE.Vector3();
 function render(dt){
-  if(state === 'title'){ const a = Math.PI + Math.sin(T*.35)*1.1; camera.position.set(p.x + .5 + Math.sin(a)*6, p.y+2.3, p.z + Math.cos(a)*6); lookV.set(p.x+.5, p.y+1.2, p.z); }
+  if(state === 'title'){ const a = Math.PI + .35 + Math.sin(T*.35)*.6; camera.position.set(p.x + .5 + Math.sin(a)*7, p.y+2.6, p.z + Math.cos(a)*7); lookV.set(p.x+.5, p.y+1.2, p.z); }
   else if(state === 'win'){ const a = Math.sin(winT*.5)*.8; camera.position.set(p.x + Math.sin(a)*8.5, 13+2.6, p.z + Math.cos(a)*8.5); lookV.set(p.x, 13+1.9, p.z); }
   else {
     const k = camSnap ? 1 : Math.min(1, dt*7); camX += (p.x - camX)*k; camY += (p.y - camY)*(camSnap ? 1 : Math.min(1, dt*4.5)); camSnap = false;
@@ -875,7 +942,8 @@ function render(dt){
   blob.visible = gy > -1e8 && p.dead <= 0;
   if(blob.visible){ const h = p.y - gy, s = Math.max(.35, 1 - h*.09); blob.position.set(p.x, gy+.07, p.z); blob.scale.set(s,s,s); }
   sunLight.position.set(p.x-9, p.y+40, p.z-22); sunLight.target.position.set(p.x, p.y, p.z-6);
-  sun.position.set(camera.position.x + 70, camera.position.y + 135, camera.position.z - 520);
+  sun.position.set(camera.position.x + 19, camera.position.y + 36.5, camera.position.z - 140); // closer and smaller: looks the same, stays inside the drawing distance
+  drawItems();
   renderer.render(scene, camera);
   if(state === 'play'){
     $('money').textContent = money; $('ban').textContent = bananas; $('ouch').textContent = bonks; $('gold').textContent = golds; $('axo').textContent = axoFound; $('t').textContent = playT.toFixed(1) + 's';
@@ -892,19 +960,49 @@ function showUI(){
   $('hint').textContent = !play ? '' : touch ? '◀ ▶ steer  ·  ▲ run  ·  JUMP  ·  JUMP again in the air = DOUBLE JUMP  ·  👁 = see through the king\'s eyes'
                                             : 'W / ↑ run forward  ·  A D / ← → steer  ·  SPACE jump  ·  SPACE again in the air = DOUBLE JUMP  ·  V = see through the king\'s eyes';
   const o = $('overlay'); o.style.display = play ? 'none' : 'flex';
-  if(state === 'title') o.innerHTML = '<div><h1>BANANA KING <b>3D</b></h1><p class="by">A game by Ashton</p></div><div><p>Jump over spikes and lasers. Grab the money, gold and crystals. Find all 5 axolotls. Reach the castle to win!</p><p>' + controls + '</p><p class="go">' + go + ' TO START</p></div>';
+  if(state === 'title') o.innerHTML = '<div><h1>BANANA KING <b>3D</b></h1><p class="by">A game by Ashton</p></div><div><p>Jump over spikes and lasers. Grab the money, gold and crystals. Find all 5 axolotls. Reach the castle to win!</p><p>' + controls + '</p><p class="go">' + go + ' TO START</p><button class="pv" id="privacyBtn">Privacy</button></div>';
   if(state === 'win') o.innerHTML = '<div><h1>YOU WIN!</h1><p style="font-size:min(5vw,34px);color:#7dff6a">All hail the Banana King and his son! 👑</p></div><div><p>Money: $' + money + ' &nbsp;·&nbsp; Gold: ' + golds + ' &nbsp;·&nbsp; Bananas: ' + bananas + ' &nbsp;·&nbsp; Axolotls: ' + axoFound + '/5 &nbsp;·&nbsp; Ouches: ' + bonks + ' &nbsp;·&nbsp; Time: ' + playT.toFixed(1) + 's</p>' + (axoFound === 5 ? '<p style="color:#ff9cc8">You found every axolotl! 🎉</p>' : '') + '<p class="go">' + go + ' TO PLAY AGAIN</p></div>';
 }
 showUI();
 
+// ---------- photo mode: sets up a game moment and freezes it, for App Store screenshots ----------
+let frozen = false;
+window.__shot = function(name){
+  const step = n => { for(let i=0;i<n;i++) update(1/90); };
+  const begin = (c, x, d, top) => {
+    state = 'play'; resetGame(); showUI();
+    cp = c; respawn(); p.x = x; p.z = -d; p.y = top; camSnap = true;
+    step(420);                        // let the money rain fill the sky
+    playT = 30 + d/10;                // hide the how-to-play hint
+  };
+  const run = (until, jumps) => { keys.fwd = true; let j = 0;
+    for(let i=0; i<900 && !until(); i++){ if(jumps && j < jumps.length && jumps[j]()){ pressJump(); j++; } step(1); }
+    keys.fwd = false; };
+  const followers = n => axos.slice(0, n).forEach((a,i) => { a.found = true; a.slot = i+1; a.gl.visible = false; a.a.g.scale.setScalar(.75); axoFound = i+1; });
+  frozen = false;
+  if(name === 'runway'){ begin(0, innerWidth < innerHeight * .6 ? 1.9 : 1.1, -1, 0); money = 12; run(() => -p.z > 1.6); step(2); }
+  if(name === 'jump'){ begin(4, -2.2, 137.6, 7.5); money = 238; golds = 7; bananas = 4; followers(2);
+    run(() => p.jumps === 2 && p.vy < 1.0, [() => -p.z > 139.9, () => p.vy < 2.5]); }
+  if(name === 'mine'){ begin(7, -.8, 252.8, 11); money = 452; golds = 17; bananas = 9; followers(3);
+    run(() => -p.z > 256.6); const gate = hazards.find(h => h.gate); for(let i=0; i<400 && !(gate.on && gate.u > .3); i++) step(1); }
+  if(name === 'house'){ begin(5, 0, 176, 8.5); money = 331; golds = 12; bananas = 7; followers(2);
+    for(const it of items) if(it.type !== 'bill') it.gone = true;   // no stray "+$3" over the JACKPOT text
+    run(() => jackpot.taken); step(24); }
+  if(name === 'eyes'){ begin(7, 0, 260.5, 11); money = 470; golds = 18; bananas = 9; followers(3); firstPerson = true; camSnap = true;
+    const gate = hazards.find(h => h.gate); for(let i=0; i<400 && !(gate.on && gate.u > .3); i++) step(1); }
+  if(name === 'win'){ begin(8, 0, 318, 13); followers(5); run(() => state === 'win'); step(160);
+    money = 1086; golds = 31; bananas = 14; bonks = 2; playT = 96.4; showUI(); }
+  render(0); frozen = name !== 'title';
+};
+
 let last = performance.now();
 function frame(now){
   let dt = Math.min(.05, (now-last)/1000); last = now; const full = dt;
-  while(dt > 1e-5){ const s = Math.min(dt, 1/90); update(s); dt -= s; }
+  while(!frozen && dt > 1e-5){ const s = Math.min(dt, 1/90); update(s); dt -= s; }
   render(full); requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__game = {p, keys, update, render, pressJump, toggleView, solids, hazards, checkpoints, pads, camera, axos, cashes, items: () => items,
+window.__game = {p, keys, update, render, pressJump, toggleView, solids, hazards, checkpoints, pads, camera, axos, cashes, items: () => items, renderer,
   tp: i => { cp = i; respawn(); }, info: () => ({state, money, bananas, bonks, cp, x:p.x, y:p.y, z:p.z, t:playT, items:items.length, first:firstPerson, gold:golds, axo:axoFound})};
 </script>
 </body>
