@@ -10,16 +10,24 @@
 		0BA9E5E1E47E36A5A8503C3A /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 3ED381A586748A4FA61CEE21 /* Assets.xcassets */; };
 		3BEF2D40CEE2ACD917E1F02B /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = 7D35235967D2336D582E281E /* index.html */; };
 		8B14D0C50739407D00520710 /* lib in Resources */ = {isa = PBXBuildFile; fileRef = 7C4A536E811AE85CF7B9870C /* lib */; };
+		9B13F9896559F74D48B152C5 /* lib in Resources */ = {isa = PBXBuildFile; fileRef = 7C4A536E811AE85CF7B9870C /* lib */; };
+		A830920ADF48346BAA44E0A3 /* BananaKingMacApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3DC1513D0EE284C516C674EB /* BananaKingMacApp.swift */; };
 		B097D08BDE1EA5DB8D63F623 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = FA5475D6F9BF1141C1F785D1 /* PrivacyInfo.xcprivacy */; };
+		E32F1C4D537C132779A2D2FC /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C9F89B2E749271F768B60BEA /* Assets.xcassets */; };
 		F0673C0E9CF786754608D2E4 /* BananaKingApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 96E5C167D63002BB5321F93E /* BananaKingApp.swift */; };
+		F561F23B3811024E6EF71996 /* index.html in Resources */ = {isa = PBXBuildFile; fileRef = 7D35235967D2336D582E281E /* index.html */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		1361333635202CE4ABB36CAF /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		3DC1513D0EE284C516C674EB /* BananaKingMacApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BananaKingMacApp.swift; sourceTree = "<group>"; };
 		3ED381A586748A4FA61CEE21 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		660BFE5C2070C482D379D3BD /* BananaKing3D.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = BananaKing3D.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7C4A536E811AE85CF7B9870C /* lib */ = {isa = PBXFileReference; lastKnownFileType = folder; name = lib; path = ../lib; sourceTree = SOURCE_ROOT; };
 		7D35235967D2336D582E281E /* index.html */ = {isa = PBXFileReference; lastKnownFileType = text.html; path = index.html; sourceTree = "<group>"; };
 		96E5C167D63002BB5321F93E /* BananaKingApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BananaKingApp.swift; sourceTree = "<group>"; };
+		A574CF7A1E284B847AFDF61D /* BananaKing3DMac.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = BananaKing3DMac.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		C9F89B2E749271F768B60BEA /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		FA5475D6F9BF1141C1F785D1 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -29,8 +37,19 @@
 			children = (
 				6BE85B91248F9BBB98D140B3 /* Banana King 3D */,
 				E79204AAA368D2F2A346E685 /* BananaKing */,
+				0854884D39E9D44E5D8700FC /* Mac */,
 				B4DE990093DE8BB1AC740B11 /* Products */,
 			);
+			sourceTree = "<group>";
+		};
+		0854884D39E9D44E5D8700FC /* Mac */ = {
+			isa = PBXGroup;
+			children = (
+				C9F89B2E749271F768B60BEA /* Assets.xcassets */,
+				3DC1513D0EE284C516C674EB /* BananaKingMacApp.swift */,
+				1361333635202CE4ABB36CAF /* Info.plist */,
+			);
+			path = Mac;
 			sourceTree = "<group>";
 		};
 		6BE85B91248F9BBB98D140B3 /* Banana King 3D */ = {
@@ -47,6 +66,7 @@
 			isa = PBXGroup;
 			children = (
 				660BFE5C2070C482D379D3BD /* BananaKing3D.app */,
+				A574CF7A1E284B847AFDF61D /* BananaKing3DMac.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -82,6 +102,24 @@
 			productReference = 660BFE5C2070C482D379D3BD /* BananaKing3D.app */;
 			productType = "com.apple.product-type.application";
 		};
+		88EE89D6239D268D83B0D0E4 /* BananaKing3DMac */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 1B9E3CFB542A35834382A242 /* Build configuration list for PBXNativeTarget "BananaKing3DMac" */;
+			buildPhases = (
+				D5B1DDC82616026E23D7DD3D /* Sources */,
+				06089B1173217C6204AD689A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = BananaKing3DMac;
+			packageProductDependencies = (
+			);
+			productName = BananaKing3DMac;
+			productReference = A574CF7A1E284B847AFDF61D /* BananaKing3DMac.app */;
+			productType = "com.apple.product-type.application";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -92,6 +130,10 @@
 				LastUpgradeCheck = 1430;
 				TargetAttributes = {
 					2F0CB92BFAC5BE8535C57FA4 = {
+						DevelopmentTeam = U88T3SPD73;
+						ProvisioningStyle = Automatic;
+					};
+					88EE89D6239D268D83B0D0E4 = {
 						DevelopmentTeam = U88T3SPD73;
 						ProvisioningStyle = Automatic;
 					};
@@ -112,11 +154,22 @@
 			projectRoot = "";
 			targets = (
 				2F0CB92BFAC5BE8535C57FA4 /* BananaKing3D */,
+				88EE89D6239D268D83B0D0E4 /* BananaKing3DMac */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		06089B1173217C6204AD689A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E32F1C4D537C132779A2D2FC /* Assets.xcassets in Resources */,
+				F561F23B3811024E6EF71996 /* index.html in Resources */,
+				9B13F9896559F74D48B152C5 /* lib in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		5FAD430B7C42371FB67FFA10 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -136,6 +189,14 @@
 			buildActionMask = 2147483647;
 			files = (
 				F0673C0E9CF786754608D2E4 /* BananaKingApp.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		D5B1DDC82616026E23D7DD3D /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				A830920ADF48346BAA44E0A3 /* BananaKingMacApp.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -161,6 +222,23 @@
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
+		};
+		53CBDA38D9EB4920FD78E8C9 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Mac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.garyphelps.bananaking3d.mac;
+				PRODUCT_NAME = "Banana King 3D";
+				SDKROOT = macosx;
+			};
+			name = Release;
 		};
 		55C1CFC32B5DDF356B429207 /* Release */ = {
 			isa = XCBuildConfiguration;
@@ -211,11 +289,11 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.1;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_VERSION = 5.0;
@@ -297,21 +375,47 @@
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MACOSX_DEPLOYMENT_TARGET = 13.0;
 				MARKETING_VERSION = 1.1;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				PRODUCT_NAME = "$(TARGET_NAME)";
-				SDKROOT = iphoneos;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 				SWIFT_VERSION = 5.0;
 			};
 			name = Debug;
 		};
+		AC4705ADE9FECB89ED27E538 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				COMBINE_HIDPI_IMAGES = YES;
+				ENABLE_HARDENED_RUNTIME = YES;
+				INFOPLIST_FILE = Mac/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/../Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.garyphelps.bananaking3d.mac;
+				PRODUCT_NAME = "Banana King 3D";
+				SDKROOT = macosx;
+			};
+			name = Debug;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		1B9E3CFB542A35834382A242 /* Build configuration list for PBXNativeTarget "BananaKing3DMac" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				AC4705ADE9FECB89ED27E538 /* Debug */,
+				53CBDA38D9EB4920FD78E8C9 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
 		AB86F8076AA07EFF816D4477 /* Build configuration list for PBXNativeTarget "BananaKing3D" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

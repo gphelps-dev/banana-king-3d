@@ -8,6 +8,7 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 *.xcarchive
+*.dmg
 
 # local tool settings
 .claude/

@@ -9,7 +9,9 @@ the castle to win. The king's son copies everything you do, and the axolotls you
 ## Play
 
 - **In a browser:** open `index.html`. It works offline.
-- **On a Mac:** double-click **Play Banana King 3D.app**.
+- **On a Mac:** open **Banana King 3D.dmg** and drag the game into Applications. To make a fresh DMG, run
+  `ios/make-dmg.sh` (it builds the Mac app, signs it with the Developer ID and packs it). Or double-click
+  **Play Banana King 3D.app** to play in your web browser.
 - **On iPad and iPhone:** open `ios/BananaKing3D.xcodeproj` in Xcode and press Run. The app shows the same
   `index.html` full screen. To regenerate the Xcode project after editing `ios/project.yml`, run `xcodegen` in `ios/`.
 
