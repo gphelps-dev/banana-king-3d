@@ -9,7 +9,7 @@
   canvas{display:block}
   .o{text-shadow:0 2px 0 #1b1033,0 -2px 0 #1b1033,2px 0 0 #1b1033,-2px 0 0 #1b1033,0 4px 8px #0008;font-weight:900}
   #hud{position:fixed;left:calc(16px + env(safe-area-inset-left));top:calc(12px + env(safe-area-inset-top));font-size:26px;line-height:1.25;display:none}
-  #hud .m{color:#7dff8a;font-size:34px} #hud .b{color:#ffe14d} #hud .g{color:#ffd447;font-size:22px} #hud .a{color:#ff9cc8;font-size:22px} #hud .x{color:#ffb3b3;font-size:17px}
+  #hud .m{color:#7dff8a;font-size:34px} #hud .b{color:#ffe14d} #hud .g{color:#ffd447;font-size:22px} #hud .s{color:#fff27a;font-size:22px} #hud .a{color:#ff9cc8;font-size:22px} #hud .x{color:#ffb3b3;font-size:17px}
   #time{position:fixed;right:calc(16px + env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));font-size:24px;display:none;text-align:right}
   #time small{display:block;font-size:13px;opacity:.85;font-weight:700}
   #bar{position:fixed;left:50%;top:calc(18px + env(safe-area-inset-top));width:min(40vw,420px);height:12px;margin-left:calc(min(40vw,420px)/-2);background:#0007;border-radius:8px;display:none}
@@ -42,14 +42,14 @@
     #br{left:calc(234px + env(safe-area-inset-left))}
     #bj{width:136px;height:136px;font-size:28px}
     #bv{width:72px;height:72px;font-size:28px;top:calc(92px + env(safe-area-inset-top))}
-    #hud{font-size:30px} #hud .m{font-size:44px} #hud .g,#hud .a{font-size:26px} #hud .x{font-size:20px}
+    #hud{font-size:30px} #hud .m{font-size:44px} #hud .g,#hud .a,#hud .s{font-size:26px} #hud .x{font-size:20px}
     #time{font-size:30px}
     .touch #hint{bottom:calc(206px + env(safe-area-inset-bottom));font-size:18px}
   }
 </style>
 </head>
 <body>
-<div id="hud" class="o"><div class="m">$ <span id="money">0</span></div><div class="b">🍌 × <span id="ban">0</span></div><div class="g">Gold × <span id="gold">0</span></div><div class="a">Axolotls <span id="axo">0</span>/5</div><div class="x">Ouches: <span id="ouch">0</span></div></div>
+<div id="hud" class="o"><div class="m">$ <span id="money">0</span></div><div class="b">🍌 × <span id="ban">0</span></div><div class="g">Gold × <span id="gold">0</span></div><div class="s">Stars × <span id="stars">0</span></div><div class="a">Axolotls <span id="axo">0</span>/5</div><div class="x">Ouches: <span id="ouch">0</span></div></div>
 <div id="time" class="o"><span id="t">0.0s</span><small>V = change view</small></div>
 <div id="bar"><div id="fill"></div><span id="crown">👑</span><span id="castle">🏰</span></div>
 <div id="overlay" class="o"></div>
@@ -71,11 +71,14 @@ if(!window.THREE){ document.getElementById('overlay').innerHTML = '<p>The 3D eng
 const BANANA_NAME = 'BANANA BOB';   // the banana buddy with the lips
 const RICH_NAME = 'MR. RICH';       // he is green because he is SO rich
 const BANANA_SAYS = 'POOP!';
+const MAX_NAME = 'MAX';             // the green guy
+const MAX_SAYS = 'POOP MAX!';
+const LILY_NAME = 'LILY';           // the weird one with big lips and wild hair, riding the double banana chandelier
 // =====================================================
 
 const $ = id => document.getElementById(id);
 const rnd = (a,b) => a + Math.random()*(b-a);
-const SPEED = 7.5, GRAV = 28, JUMP = 11.5, JUMP2 = 10.5, HW = 0.32, HT = 1.8, C = 303, GOAL_D = C + 17;
+const SPEED = 7.5, GRAV = 28, JUMP = 11.5, JUMP2 = 10.5, HW = 0.32, HT = 1.8, C = 353, GOAL_D = C + 17;
 
 // ---------- renderer / scene ----------
 const renderer = new THREE.WebGLRenderer({antialias:true});
@@ -142,17 +145,32 @@ const billTex = canvasTex(256, 128, c => { c.fillStyle = '#1f9a4c'; c.fillRect(0
   c.fillStyle = '#d6ffe0'; c.beginPath(); c.ellipse(128,64,44,40,0,0,7); c.fill(); c.fillStyle = '#157a3a'; c.font = '900 72px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('$',128,68);
   c.fillStyle = '#d6ffe0'; c.font = '900 30px system-ui'; c.fillText('10',40,40); c.fillText('10',216,92); });
 const glowTex = canvasTex(128, 128, c => { const g = c.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.3,'rgba(255,255,255,.45)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0,0,128,128); });
-const bubbleTex = canvasTex(320, 200, c => { c.fillStyle = '#fff'; c.strokeStyle = '#1b1033'; c.lineWidth = 10; c.lineJoin = 'round';
+function bubbleTexFor(text){ return canvasTex(320, 200, c => { c.fillStyle = '#fff'; c.strokeStyle = '#1b1033'; c.lineWidth = 10; c.lineJoin = 'round';
   c.beginPath(); c.moveTo(60,150); c.lineTo(30,192); c.lineTo(110,150); c.closePath(); c.stroke(); c.fill();
   c.beginPath(); c.ellipse(160,84,146,72,0,0,7); c.stroke(); c.fill(); c.beginPath(); c.moveTo(64,146); c.lineTo(36,186); c.lineTo(108,148); c.fill();
-  c.fillStyle = '#6b3d12'; c.font = '900 ' + Math.min(76, 520/BANANA_SAYS.length) + 'px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(BANANA_SAYS,160,88); });
+  c.fillStyle = '#6b3d12'; c.font = '900 ' + Math.min(76, 520/text.length) + 'px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(text,160,88); }); }
+const bubbleTex = bubbleTexFor(BANANA_SAYS);
+// version 1.1: black stone, the purple house, blue money and twinkly stars
+const blackStoneTex = pixelTex(c => { for(let y=0;y<16;y++) for(let x=0;x<16;x++){ const v = 26 + (Math.random()*4|0)*10; c.fillStyle = 'rgb(' + v + ',' + v + ',' + (v+6) + ')'; c.fillRect(x,y,1,1); }
+  c.fillStyle = '#5a5a66'; for(let i=0;i<7;i++) c.fillRect(Math.random()*16|0, Math.random()*16|0, 1, 1); });
+const purpleWallTex = canvasTex(128, 128, c => { c.fillStyle = '#7b3fe4'; c.fillRect(0,0,128,128); c.strokeStyle = '#4a1f9c'; c.lineWidth = 5;
+  for(let y=0;y<4;y++){ c.beginPath(); c.moveTo(0,y*32); c.lineTo(128,y*32); c.stroke(); for(let x=0;x<3;x++){ c.beginPath(); c.moveTo(x*64+(y%2)*32,y*32); c.lineTo(x*64+(y%2)*32,y*32+32); c.stroke(); } }
+  c.fillStyle = '#ffd447'; c.font = '900 26px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('★', 32, 48); c.fillText('★', 96, 112); });
+const bananaWallTex = bananaBlockTex.clone();
+for(const t of [purpleWallTex, bananaWallTex]){ t.wrapS = t.wrapT = THREE.RepeatWrapping; t.needsUpdate = true; }
+const blueBillTex = canvasTex(256, 128, c => { c.fillStyle = '#1f6fd6'; c.fillRect(0,0,256,128); c.strokeStyle = '#d6ecff'; c.lineWidth = 8; c.strokeRect(12,12,232,104);
+  c.fillStyle = '#d6ecff'; c.beginPath(); c.ellipse(128,64,44,40,0,0,7); c.fill(); c.fillStyle = '#1452a8'; c.font = '900 72px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('$',128,68);
+  c.fillStyle = '#d6ecff'; c.font = '900 30px system-ui'; c.fillText('25',40,40); c.fillText('25',216,92); });
+const starTex = canvasTex(64, 64, c => { const g = c.createRadialGradient(32,32,0,32,32,32); g.addColorStop(0,'rgba(255,240,150,.9)'); g.addColorStop(1,'rgba(255,240,150,0)'); c.fillStyle = g; c.fillRect(0,0,64,64);
+  c.fillStyle = '#ffe14d'; c.beginPath(); for(let i=0;i<10;i++){ const r = i%2 ? 9 : 22, a = -Math.PI/2 + i*Math.PI/5; c.lineTo(32 + Math.cos(a)*r, 32 + Math.sin(a)*r); } c.closePath(); c.fill(); });
 
 const L = (color, o) => new THREE.MeshLambertMaterial(Object.assign({color}, o));
 const M = {
   top: L(0xffffff, {map:tileTex}), side: L(0xffffff, {map:brickTex}), rock: L(0x3a1f6e, {flatShading:true}),
   gold: new THREE.MeshPhongMaterial({color:0xffc928, specular:0xffffff, shininess:90, emissive:0x3d2800}),
   goldD: new THREE.MeshPhongMaterial({color:0xffc928, specular:0xffffff, shininess:90, emissive:0x3d2800, side:THREE.DoubleSide}),
-  stoneSpike: L(0xffffff, {map:stoneTex, flatShading:true}), grass: L(0xc3d93a, {emissive:0x2a3300}), stonePlate: L(0x4b4f63), grassPlate: L(0x4f8a1f),
+  stoneSpike: L(0xffffff, {map:blackStoneTex, flatShading:true}),   // black stone spikes
+  grass: L(0xc3d93a, {emissive:0x2a3300}),                            // the giant yellow-green spikes in the background
   purple: L(0x7b3fe4), red: L(0xe0303a), redD: L(0xe0303a, {side:THREE.DoubleSide}), white: L(0xffffff), skin: L(0xffe6cc), dark: L(0x2a2140),
   blue: L(0x2468e0), pink: L(0xe8308c), lips: L(0xe0203a),
   banana: L(0xffe14d, {emissive:0x4a3c00}), carpet: L(0xc8202c), stone: L(0xcfc8ea), stoneD: L(0xa79fd0),
@@ -171,6 +189,15 @@ const M = {
   emitter: L(0x2a2140), lens: new THREE.MeshBasicMaterial({color:0xff5050}),
   water: L(0x3fb6ff, {emissive:0x0a3a6a, transparent:true, opacity:.8}),
   axo: L(0xffb3d1), axoGill: L(0xe8307a), axoDark: L(0x3a1030),
+  greenSpike: L(0x2fc23c, {emissive:0x0a3a0a}), yellowSpike: L(0xffd60a, {emissive:0x5a4400}), moneyPlate: L(0xffffff, {map:moneyWallTex}),
+  poison: L(0x9b30ff, {emissive:0x4a0a7a}), poisonBubble: L(0xd28cff, {emissive:0x6a1aa0}),
+  blackJuice: new THREE.MeshPhongMaterial({color:0x101014, specular:0x8a8aa0, shininess:90}), blackBubble: L(0x3a3a48),
+  purpleWall: L(0xffffff, {map:purpleWallTex, transparent:true}), purpleRoof: L(0x5a1a9a, {transparent:true}),
+  bananaWall: L(0xffffff, {map:bananaWallTex, transparent:true}), bananaRoof: L(0xffc928, {transparent:true}),
+  yellowCloud: L(0xfff27a, {emissive:0x6a5a00}), star: L(0xffd60a, {emissive:0x8a6a00}),
+  robot: new THREE.MeshPhongMaterial({color:0xb8c0d0, specular:0xffffff, shininess:80}), brow: L(0x15131c), pot: L(0x23202c),
+  blueBill: new THREE.MeshBasicMaterial({map:blueBillTex, side:THREE.DoubleSide}),
+  lily: L(0xff8fe0, {emissive:0x3a0a30}), lilyHair: L(0xff6a00), maxSkin: L(0x6ae06a), maxShirt: L(0xff7a1a),
   bulb: new THREE.MeshBasicMaterial({color:0xfff6b0}),
   blob: new THREE.MeshBasicMaterial({color:0x000000, transparent:true, opacity:.38, depthWrite:false}),
 };
@@ -201,6 +228,8 @@ const G = {
   crystal: new THREE.OctahedronGeometry(.35, 0), cube: new THREE.BoxGeometry(1,1,1),
   goldBar: new THREE.CylinderGeometry(.15,.23,.16,4).rotateY(Math.PI/4).scale(1.8,1,1), coin: new THREE.CylinderGeometry(.22,.22,.05,18).rotateX(Math.PI/2),
   beamCore: new THREE.CylinderGeometry(.045,.045,1,6), beamGlow: new THREE.CylinderGeometry(.16,.16,1,10),
+  star: (() => { const s = new THREE.Shape(); for(let i=0;i<10;i++){ const r = i%2 ? .22 : .5, a = Math.PI/2 + i*Math.PI/5; if(i) s.lineTo(Math.cos(a)*r, Math.sin(a)*r); else s.moveTo(Math.cos(a)*r, Math.sin(a)*r); }
+    s.closePath(); const g = new THREE.ExtrudeGeometry(s, {depth:.16, bevelEnabled:true, bevelThickness:.05, bevelSize:.04, bevelSegments:1}); g.center(); return g; })(),
   cloud: new THREE.SphereGeometry(1,12,10), wheel: new THREE.CylinderGeometry(.28,.28,.2,12), pyramid: new THREE.ConeGeometry(Math.SQRT2,1,4).rotateY(Math.PI/4),
 };
 
@@ -233,17 +262,23 @@ function animKing(k, phase, moveAmt, air, t){
   if(air){ k.legL.rotation.x = .7; k.legR.rotation.x = -.5; k.armL.rotation.set(0,0,-2.5); k.armR.rotation.set(0,0,2.5); k.cape.rotation.x = -1.1 + Math.sin(t*14)*.12; }
   else { k.legL.rotation.x = s*.95; k.legR.rotation.x = -s*.95; k.armL.rotation.set(-s*.9,0,0); k.armR.rotation.set(s*.9,0,0); k.cape.rotation.x = -.2 - moveAmt*.75 + Math.sin(t*12)*.08*(.3+moveAmt); }
 }
+function sixSeven(k, t){ // the "6 7" hands at the end: palms up, bouncing up and down, one then the other
+  const a = Math.sin(t*9);
+  k.armL.rotation.set(1.35 + a*.45, 0, -.25); k.armR.rotation.set(1.35 - a*.45, 0, .25);
+  k.legL.rotation.x = 0; k.legR.rotation.x = 0; k.cape.rotation.x = -.25 + Math.sin(t*6)*.08;
+}
 const king = buildKing(); scene.add(king.g);
 const son = buildKing(); son.g.scale.setScalar(.6); scene.add(son.g);   // the king's son: looks the same, just smaller
 const blob = new THREE.Mesh(G.blob, M.blob); blob.rotation.x = -Math.PI/2; scene.add(blob);
 
 // ---------- world state ----------
-const solids = [], movers = [], hazards = [], blocks = [], cashes = [], pads = [], chands = [], checkpoints = [], miniKings = [], spinners = [], npcs = [], richGuys = [], skyClouds = [], axos = [], occluders = [];
-let items = [], parts = [], floats = [], hist = [], trail = [], sonS = null, jackpot = null;
-const pools = {bill:[], banana:[], gold:[], silver:[]};
+const solids = [], movers = [], hazards = [], blocks = [], cashes = [], pads = [], chands = [], checkpoints = [], miniKings = [], spinners = [], npcs = [], richGuys = [], skyClouds = [], axos = [], occluders = [], houses = [], goldClouds = [];
+let items = [], parts = [], floats = [], hist = [], trail = [], sonS = null, jackpot = null, skyStars = null;
+const pools = {bill:[], banana:[], gold:[], silver:[], blue:[]};
 
+const labelTexCache = {};   // the same name label is drawn once and shared
 function label(str, color, w){
-  const t = canvasTex(512, 128, c => { c.font = '900 ' + Math.min(92, 880/str.length) + 'px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round'; c.lineWidth = 16; c.strokeStyle = '#1b1033'; c.strokeText(str,256,68); c.fillStyle = color; c.fillText(str,256,68); });
+  const t = labelTexCache[str + color] || (labelTexCache[str + color] = canvasTex(512, 128, c => { c.font = '900 ' + Math.min(92, 880/str.length) + 'px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round'; c.lineWidth = 16; c.strokeStyle = '#1b1033'; c.strokeText(str,256,68); c.fillStyle = color; c.fillText(str,256,68); }));
   const s = new THREE.Sprite(new THREE.SpriteMaterial({map:t, transparent:true, fog:false})); s.scale.set(w, w/4, 1); return s;
 }
 function P(x, top, d, w, len, o){ // platform: top surface at `top`, from distance d to d+len
@@ -270,7 +305,9 @@ function MB(x, top, d, s, mat){ // a block you parkour on: money, banana, gold o
   solids.push({x0:x-s/2, x1:x+s/2, y0:top-s, y1:top, z0:-(d+s), z1:-d});
 }
 function spikes(x, top, d, width, rows, kind){
-  const g = new THREE.Group(), grass = kind === 'grass', n = Math.max(1, Math.round(width/.85)), sp = width/n, dep = rows*.85;
+  // kinds: 'stone' = black stone spikes and 'grass' = green spikes (both send you back to the checkpoint),
+  //        'yellow' = weaker spikes (they just knock you back and cost $5)
+  const g = new THREE.Group(), grass = kind !== 'stone', weak = kind === 'yellow', n = Math.max(1, Math.round(width/.85)), sp = width/n, dep = rows*.85;
   // the whole row is one instanced mesh (one draw call) instead of one mesh per spike: much faster on phones
   const o = new THREE.Object3D(), mats = [];
   for(let r=0;r<rows;r++) for(let i=0;i<n;i++){
@@ -278,11 +315,11 @@ function spikes(x, top, d, width, rows, kind){
     if(grass) for(let b=0;b<3;b++){ const h = rnd(.75,1.1); o.scale.set(1,h,1); o.position.set(cx + (b-1)*.24 + rnd(-.05,.05), .65*h, cz + rnd(-.2,.2)); o.rotation.set(rnd(-.18,.18), 0, rnd(-.22,.22)); o.updateMatrix(); mats.push(o.matrix.clone()); }
     else { const h = rnd(.85,1.1); o.scale.set(1,h,1); o.position.set(cx, .52*h, cz); o.rotation.set(0, rnd(0,3), 0); o.updateMatrix(); mats.push(o.matrix.clone()); }
   }
-  const im = new THREE.InstancedMesh(grass ? G.blade : G.stoneSpike, grass ? M.grass : M.stoneSpike, mats.length);
+  const im = new THREE.InstancedMesh(grass ? G.blade : G.stoneSpike, weak ? M.yellowSpike : grass ? M.greenSpike : M.stoneSpike, mats.length);
   mats.forEach((m,i) => im.setMatrixAt(i, m)); im.castShadow = !grass; im.frustumCulled = false; g.add(im);
-  const plate = new THREE.Mesh(new THREE.BoxGeometry(width, .1, dep), grass ? M.grassPlate : M.stonePlate); plate.position.y = .05; g.add(plate);
+  const plate = new THREE.Mesh(boxGeo(width, .1, dep, 1), M.moneyPlate); plate.position.y = .05; g.add(plate);   // money at the bottom of the spikes
   g.position.set(x, top, -d); scene.add(g);
-  hazards.push({x0:x-width/2+.14, x1:x+width/2-.14, y0:top, y1:top+.8, z0:-d-dep/2+.14, z1:-d+dep/2-.14});
+  hazards.push({weak, x0:x-width/2+.14, x1:x+width/2-.14, y0:top, y1:top+.8, z0:-d-dep/2+.14, z1:-d+dep/2-.14});
 }
 function car(top, d, w, ph){ // a car that keeps crashing into the big stone spikes
   const sx = w/2 - .6, amp = sx - .5 - 1.15, g = new THREE.Group();
@@ -291,6 +328,9 @@ function car(top, d, w, ph){ // a car that keeps crashing into the big stone spi
   add(new THREE.BoxGeometry(2.2,.5,1.1), M.carBody, 0,.55,0); add(new THREE.BoxGeometry(1.1,.45,.95), M.glass, -.15,1.0,0);
   for(const wx of [-.7,.7]) for(const wz of [-.55,.55]) add(G.wheel, M.tire, wx,.28,wz).rotation.x = Math.PI/2;
   for(const wz of [-.35,.35]) add(G.ball, M.bulb, 1.1,.6,wz).scale.setScalar(2.2);
+  // a little house riding on top of the car
+  add(new THREE.BoxGeometry(.8,.55,.75), M.purple, -.15,1.5,0); add(G.pyramid, M.red, -.15,2.0,0).scale.set(.6,.45,.55);
+  add(new THREE.BoxGeometry(.04,.32,.22), M.dark, .26,1.42,0);
   g.position.set(0, top, -d); scene.add(g);
   hazards.push({car:true, g, top, sx, amp, ph, dir:1, hop:0, x0:-1, x1:1, y0:top, y1:top+1.05, z0:-d-.5, z1:-d+.5, z:-d});
 }
@@ -325,7 +365,7 @@ function batch(geo, mat, list, parent){ // many copies of one shape, drawn in a 
   list.forEach((o,i) => { o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
   im.frustumCulled = false; parent.add(im); return im;
 }
-function chandelier(x, top, d){
+function chandelier(x, top, d, money){ // money = the DOUBLE banana chandelier: two rings, Lily on top, and it drops money
   const y = top + 7.2, root = new THREE.Group(), sw = new THREE.Group(); root.position.set(x, y+8, -d); root.add(sw); scene.add(root);
   const chainHi = new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,80,5), M.gold); chainHi.position.y = 40; root.add(chainHi);
   const chain = new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,6.6,5), M.gold); chain.position.y = -3.3; sw.add(chain);
@@ -345,7 +385,96 @@ function chandelier(x, top, d){
   batch(G.ball, M.bulb, bulbs, sw); batch(G.banana, M.banana, bans, sw);
   const orb = new THREE.Mesh(G.head, M.gold); orb.position.y = -6.6; sw.add(orb);
   const gl = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0xffe98a, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:.7})); gl.scale.set(8,8,1); gl.position.y = -8.3; sw.add(gl);
-  chands.push({x, y, z:-d, sw, t:rnd(.5,2.5), ph:d});
+  if(money){
+    torus(1.15, -4.9);
+    const up2 = []; for(let i=0;i<8;i++){ const b = new THREE.Object3D(), a = i/8*Math.PI*2; b.scale.setScalar(1.3); b.position.set(Math.cos(a)*1.2, -5.5, Math.sin(a)*1.2); b.rotation.set(0, -a, BAN_UP); up2.push(b); }
+    batch(G.banana, M.banana, up2, sw);
+    const lily = buildLily(); lily.position.set(0, -4.85, 0); lily.scale.setScalar(.9); lily.rotation.y = Math.PI; sw.add(lily);   // facing the king as he runs in
+    const nm = label(LILY_NAME, '#ff8fe0', 2.4); nm.position.set(0, -2.7, 0); sw.add(nm);
+  }
+  chands.push({x, y, z:-d, sw, t:rnd(.5,2.5), ph:d, money});
+}
+function buildLily(){ // Lily: a weird round creature with big lips and wild hair (Ashton's own character)
+  const g = new THREE.Group(), add = (geo, mat, x, y, z, sx, sy, sz) => { const m = new THREE.Mesh(geo, mat); m.position.set(x,y,z); m.scale.set(sx||1, sy||sx||1, sz||sx||1); g.add(m); return m; };
+  add(G.head, M.lily, 0,.62,0, 2.0,1.85,1.8).castShadow = true;   // only the body casts a shadow (cheaper on phones)
+  add(G.ball, M.white, -.2,.86,-.52, 3.4); add(G.ball, M.dark, -.2,.86,-.67, 1.6);      // one big eye...
+  add(G.ball, M.white, .25,.92,-.5, 2.3); add(G.ball, M.dark, .25,.92,-.6, 1.1);       // ...and one small one
+  add(G.ball, M.lips, 0,.53,-.56, 6.2,1.9,2.4); add(G.ball, M.lips, 0,.37,-.54, 5.2,2.1,2.4);   // big weird lips
+  for(let i=0;i<9;i++){ const a = (i/8 - .5)*2.4, h = add(G.point, M.lilyHair, Math.sin(a)*.45, 1.18 + Math.cos(a)*.06, rnd(-.15,.15), 2.2, 2.8, 2.2); h.rotation.z = -a*.9; }  // wild hair
+  for(const sx of [-1,1]) add(G.leg, M.lily, sx*.25,.06,0, 1,.5,1);
+  return g;
+}
+function maxGuy(x, top, d){ // Max: the green guy who says POOP MAX!
+  const g = new THREE.Group(), add = (geo, mat, px, py, pz) => { const m = new THREE.Mesh(geo, mat); m.position.set(px,py,pz); g.add(m); return m; };
+  for(const lx of [-.14,.14]){ add(G.leg, M.dark, lx,.3,0); add(G.shoe, M.white, lx,.07,-.06); }
+  const body = add(G.robe, M.maxShirt, 0,.95,0); body.scale.set(.85,1,.85); body.castShadow = true;
+  for(const sx of [-1,1]){ const a = add(G.arm, M.maxSkin, sx*.36,1.02,0); a.rotation.z = sx*.35; }
+  add(G.head, M.maxSkin, 0,1.62,0).castShadow = true;
+  for(const ex of [-.11,.11]){ add(G.ball, M.white, ex,1.7,-.28).scale.setScalar(1.7); add(G.ball, M.dark, ex,1.7,-.34).scale.setScalar(.85); }
+  const sm = add(G.smile, M.dark, 0,1.58,-.28); sm.rotation.z = -Math.PI/2 - Math.PI*.4;
+  add(new THREE.CylinderGeometry(.3,.3,.12,16), M.maxShirt, 0,1.9,0); add(new THREE.BoxGeometry(.32,.05,.3), M.maxShirt, 0,1.86,-.28);   // cap
+  const bub = new THREE.Sprite(new THREE.SpriteMaterial({map:bubbleTexFor(MAX_SAYS), transparent:true, fog:false, depthTest:false})); bub.position.set(-1.5,3.2,0); bub.renderOrder = 9; g.add(bub);
+  const name = label(MAX_NAME, '#7dff8a', 2.4); name.position.set(0,2.55,0); g.add(name);
+  g.position.set(x, top, -d); g.rotation.y = Math.PI; scene.add(g);
+  npcs.push({g, bub, x, top, z:-d, near:false, pop:0, ph:d});
+}
+function juice(x, top, d, r, black){ // purple juice = poison (knocks you back, -$10); black juice gets you in one hit
+  const g = new THREE.Group(), mat = black ? M.blackJuice : M.poison, bm = black ? M.blackBubble : M.poisonBubble;
+  const pool = new THREE.Mesh(new THREE.CylinderGeometry(r, r, .08, 28), mat); pool.position.y = .05; g.add(pool);
+  const rim = new THREE.Mesh(new THREE.TorusGeometry(r, .09, 6, 28), bm); rim.rotation.x = Math.PI/2; rim.position.y = .07; g.add(rim);
+  // the bubbles are one instanced mesh (one draw call), moved every frame
+  const bub = new THREE.InstancedMesh(G.ball, bm, 7); bub.instanceMatrix.setUsage(THREE.DynamicDrawUsage); bub.frustumCulled = false; g.add(bub);
+  const bubbles = []; for(let i=0;i<7;i++){ const a = rnd(0,6.28), rr = rnd(0, r*.75); bubbles.push({x:Math.cos(a)*rr, z:Math.sin(a)*rr, ph:rnd(0,6)}); }
+  const lab = label(black ? 'BLACK JUICE!' : 'POISON!', black ? '#c8c8d8' : '#d28cff', 1.9); lab.position.y = 1.1; g.add(lab);
+  g.position.set(x, top, -d); scene.add(g);
+  hazards.push({juice:true, black:!!black, weak:!black, cx:x, cz:-d, r, bubbles, bub, x0:x-r, x1:x+r, y0:top, y1:top+.3, z0:-d-r, z1:-d+r});
+}
+function pedestal(x, top, d){ const m = new THREE.Mesh(new THREE.CylinderGeometry(.8,.9,1.2,10), M.stoneD); m.position.set(x, top-.6, -d); m.receiveShadow = true; scene.add(m); }
+function laserPerson(side, top, d, w, ph){ // a laser guy with mean eyebrows: every 3 seconds his laser sweeps the floor, so jump!
+  const x = side*(w/2 + .9), g = new THREE.Group(), add = (geo, mat, px, py, pz) => { const m = new THREE.Mesh(geo, mat); m.position.set(px,py,pz); g.add(m); return m; };
+  pedestal(x, top, d);
+  for(const lx of [-.16,.16]) add(G.leg, M.robot, lx,.3,0);
+  const body = add(G.robe, M.robot, 0,.95,0); body.scale.set(.95,1.05,.95); body.castShadow = true;   // only body and head cast shadows
+  add(new THREE.BoxGeometry(.62,.55,.55), M.robot, 0,1.6,0).castShadow = true;                   // square robot head
+  const eyeMat = new THREE.MeshBasicMaterial({color:0x7a1010});
+  for(const ex of [-.14,.14]) add(G.ball, eyeMat, ex,1.62,-.28).scale.set(1.6,1.6,1);
+  add(new THREE.BoxGeometry(.26,.06,.04), M.brow, -.14,1.77,-.29).rotation.z = -.5;               // mean eyebrows
+  add(new THREE.BoxGeometry(.26,.06,.04), M.brow, .14,1.77,-.29).rotation.z = .5;
+  add(new THREE.BoxGeometry(.3,.05,.03), M.brow, 0,1.45,-.29);                                    // grumpy mouth
+  add(new THREE.CylinderGeometry(.11,.13,.7,10), M.emitter, -.36,.6,-.3).rotation.x = Math.PI/2;   // laser blaster
+  add(new THREE.CylinderGeometry(.03,.03,.25,6), M.robot, 0,2.0,0); add(G.ball, eyeMat, 0,2.15,0).scale.setScalar(1.4);
+  g.position.set(x, top, -d); g.rotation.y = side * Math.PI/2; scene.add(g);
+  const beamG = beam(w + 1.2); beamG.rotation.z = Math.PI/2; beamG.position.set(0, top+.5, -d); beamG.visible = false; scene.add(beamG);
+  hazards.push({timed:true, on:false, u:0, ph, eyeMat, beamG, x0:-w/2-.6, x1:w/2+.6, y0:top+.36, y1:top+.64, z0:-d-.12, z1:-d+.12});
+}
+function spikeBall(){ const g = new THREE.Group(), up = new THREE.Vector3(0,1,0), cones = [];
+  g.add(new THREE.Mesh(new THREE.SphereGeometry(.3, 12, 10), M.stoneSpike));
+  for(const v of [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1],[.7,.7,0],[-.7,.7,0],[.7,-.7,0],[-.7,-.7,0],[0,.7,.7],[0,-.7,-.7]]){
+    const dir = new THREE.Vector3(v[0],v[1],v[2]).normalize(), c = new THREE.Object3D(); c.scale.set(2.2,1.6,2.2); c.position.copy(dir).multiplyScalar(.36); c.quaternion.setFromUnitVectors(up, dir); cones.push(c); }
+  batch(G.point, M.stoneSpike, cones, g);   // all 12 spikes in one draw call
+  return g; }
+function spikeLauncher(side, top, d, w, ph){ // flying spikes! a cannon shoots spiky balls across the path
+  const xs = side*(w/2 + .9); pedestal(xs, top, d);
+  const cannon = new THREE.Mesh(new THREE.CylinderGeometry(.35,.45,1.1,12), M.emitter); cannon.rotation.z = Math.PI/2; cannon.position.set(xs, top+1.0, -d); cannon.castShadow = true; scene.add(cannon);
+  const ball = spikeBall(); ball.visible = false; scene.add(ball);
+  hazards.push({flyer:true, ball, xs, xe:-xs, top, z:-d, ph, period:2.6, travel:1.4, t:0, r:.55, wasVis:false, x0:-w/2, x1:w/2, y0:top+.45, y1:top+1.55, z0:-d-.6, z1:-d+.6});
+}
+function star(x, y, d){ // a yellow star you can grab: +$20
+  const g = new THREE.Group(), m = new THREE.Mesh(G.star, M.star); g.add(m);
+  const gl = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0xfff07a, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:.6})); gl.scale.set(2.2,2.2,1); g.add(gl);
+  g.position.set(x, y, -d); scene.add(g);
+  cashes.push({kind:'star', x, y, z:-d, g, m, taken:false, ph:cashes.length});
+}
+function goldCloud(top, d0, d1){ // a yellow cloud that drifts along raining gold
+  goldClouds.push({g:cloud(0, top + 7.5, d0, 2.0, M.yellowCloud), top, d0, d1, t:0, ph:d0});
+}
+let stripMat = null;   // one texture and material shared by every money strip
+function moneyStrip(x, top, d0, d1){ // a big strip of money along the side of a platform
+  if(!stripMat){ const t = billTex.clone(); t.wrapS = THREE.RepeatWrapping; t.needsUpdate = true; stripMat = new THREE.MeshLambertMaterial({map:t, side:THREE.DoubleSide, emissive:0x0a2a10}); }
+  const len = d1 - d0, geo = new THREE.PlaneGeometry(len, 1.1), uv = geo.attributes.uv;
+  for(let i=0;i<uv.count;i++) uv.setX(i, uv.getX(i)*len/2.2);   // one bill every 2.2 units
+  const m = new THREE.Mesh(geo, stripMat);
+  m.rotation.y = Math.PI/2; m.position.set(x, top - .62, -(d0+d1)/2); scene.add(m);
 }
 function checkpoint(d, top, w){ // a stone king statue that turns to gold
   const mat = new THREE.MeshPhongMaterial({color:0x8d86a8, specular:0xffffff, shininess:60}), st = buildKing({mono:mat});
@@ -355,9 +484,9 @@ function checkpoint(d, top, w){ // a stone king statue that turns to gold
 }
 const PUFFS = [[0,0,0,1.2],[1.1,.1,.2,.9],[-1.1,.05,-.1,.95],[.45,.5,0,.8],[-.45,.35,.3,.7]], puffO = new THREE.Object3D();
 let skyPuffs = null;
-function cloud(x, y, d, s){ // the blue stuff
+function cloud(x, y, d, s, mat){ // the blue stuff
   const g = new THREE.Group();
-  PUFFS.forEach(a => { const m = new THREE.Mesh(G.cloud, M.cloud); m.position.set(a[0],a[1],a[2]); m.scale.set(a[3],a[3]*.7,a[3]); g.add(m); });
+  PUFFS.forEach(a => { const m = new THREE.Mesh(G.cloud, mat || M.cloud); m.position.set(a[0],a[1],a[2]); m.scale.set(a[3],a[3]*.7,a[3]); g.add(m); });
   g.position.set(x, y, -d); g.scale.setScalar(s); scene.add(g); return g;
 }
 function bananaGuy(x, top, d){ // the banana buddy with lips
@@ -387,18 +516,38 @@ function richGuy(x, y, d, dir){ // green because he is rich. rides a cloud, thro
   g.position.set(x, y, -d); g.rotation.y = -dir*Math.PI*.75; scene.add(g);
   richGuys.push({g, x, y, z:-d, dir, t:1, armR, ph:d});
 }
-function moneyHouse(top, dc){ // a house made of money: run through the door for a jackpot
-  const W = 2.6, t = .4, d0 = dc-3, d1 = dc+3, wh = 3.4, dw = 1.1, dh = 2.7, m = M.house;
-  S(-W, -W+t, top, top+wh, d0, d1, m); S(W-t, W, top, top+wh, d0, d1, m);
-  for(const a of [d0, d1-t]){ S(-W+t, -dw, top, top+wh, a, a+t, m); S(dw, W-t, top, top+wh, a, a+t, m); S(-dw, dw, top+dh, top+wh, a, a+t, m); }
-  S(-W-.3, W+.3, top+wh, top+wh+.3, d0-.3, d1+.3, M.houseRoof);
-  const roof = new THREE.Mesh(G.pyramid, M.houseRoof); roof.scale.set(W+.3, 2.2, 3.3); roof.position.set(0, top+wh+.3+1.1, -dc); roof.castShadow = true; scene.add(roof);
+function house(top, dc, o){ // a house you run through, with a prize inside
+  const W = 2.6, t = .4, d0 = dc-3, d1 = dc+3, wh = 3.4, dw = 1.1, dh = 2.7, m = o.wall;
+  const walls = [S(-W, -W+t, top, top+wh, d0, d1, m), S(W-t, W, top, top+wh, d0, d1, m)];
+  for(const a of [d0, d1-t]) walls.push(S(-W+t, -dw, top, top+wh, a, a+t, m), S(dw, W-t, top, top+wh, a, a+t, m), S(-dw, dw, top+dh, top+wh, a, a+t, m));
+  walls.push(S(-W-.3, W+.3, top+wh, top+wh+.3, d0-.3, d1+.3, o.roof));
+  for(const s of walls) s.mesh.castShadow = false;   // the see-through house walls don't need shadows (cheaper on phones)
+  const roof = new THREE.Mesh(G.pyramid, o.roof); roof.scale.set(W+.3, 2.2, 3.3); roof.position.set(0, top+wh+.3+1.1, -dc); roof.castShadow = true; scene.add(roof);
   const orb = new THREE.Mesh(G.head, M.gold); orb.position.set(0, top+wh+2.6, -dc); scene.add(orb);
   for(const sx of [-dw-.1, dw+.1]){ const f = new THREE.Mesh(new THREE.BoxGeometry(.2,dh,.5), M.gold); f.position.set(sx, top+dh/2, -d0-.2); scene.add(f); }
-  const sign = label('MONEY HOUSE', '#7dff8a', 6.5); sign.position.set(0, top+wh+3.9, -d0); scene.add(sign);
-  const gl = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0x7dff8a, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:.8})); gl.scale.set(5,5,1); gl.position.set(0, top+1.6, -dc); scene.add(gl);
-  jackpot = {x:0, top, z:-dc, d0, d1, taken:false, glow:gl};
+  const sign = label(o.sign, o.signColor, 6.5); sign.position.set(0, top+wh+3.9, -d0); scene.add(sign);
+  const gl = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:o.glow, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:.8})); gl.scale.set(5,5,1); gl.position.set(0, top+1.6, -dc); scene.add(gl);
+  const prize = {x:0, top, z:-dc, d0, d1, taken:false, glow:gl, amount:o.amount, text:o.text, color:o.signColor, kind:o.kind, coins:null};
+  if(o.kind === 'pot'){ // a pot of gold with a LOT of money in it
+    const pg = new THREE.Group(), pot = new THREE.Mesh(new THREE.CylinderGeometry(.55,.42,.6,16), M.pot); pot.position.y = .3; pg.add(pot);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(.55,.07,8,20), M.pot); rim.rotation.x = Math.PI/2; rim.position.y = .6; pg.add(rim);
+    const coins = new THREE.Group(), heap = new THREE.Mesh(G.head, M.gold); heap.scale.set(1.6,.7,1.6); heap.position.y = .62; coins.add(heap);
+    const cl = []; for(let i=0;i<7;i++){ const cn = new THREE.Object3D(), a = i/7*6.28; cn.position.set(Math.cos(a)*.3, .78 + (i%2)*.06, Math.sin(a)*.3); cn.rotation.set(rnd(-1,1), rnd(0,3), 0); cl.push(cn); }
+    batch(G.coin, M.gold, cl, coins);
+    pg.add(coins); pg.position.set(0, top, -dc); scene.add(pg); prize.coins = coins;
+  }
+  if(o.kind === 'bananas'){ // a big pile of bananas
+    const coins = new THREE.Group();
+    const bl = []; for(let i=0;i<9;i++){ const b = new THREE.Object3D(); b.scale.setScalar(1.4); b.position.set(rnd(-.5,.5), .2 + (i > 5 ? .25 : 0), rnd(-.4,.4)); b.rotation.set(Math.PI/2, 0, rnd(0,6)); bl.push(b); }
+    batch(G.banana, M.banana, bl, coins);
+    coins.position.set(0, top, -dc); scene.add(coins); prize.coins = coins;
+  }
+  houses.push({d0, d1, mats:[o.wall, o.roof], prize});
+  return prize;
 }
+function moneyHouse(top, dc){ jackpot = house(top, dc, {wall:M.house, roof:M.houseRoof, sign:'MONEY HOUSE', signColor:'#7dff8a', glow:0x7dff8a, amount:100, text:'JACKPOT! +$100', kind:'money'}); }
+function purpleHouse(top, dc){ house(top, dc, {wall:M.purpleWall, roof:M.purpleRoof, sign:'PURPLE HOUSE', signColor:'#d28cff', glow:0xffd447, amount:250, text:'POT OF GOLD! +$250', kind:'pot'}); }
+function bananaHouse(top, dc){ house(top, dc, {wall:M.bananaWall, roof:M.bananaRoof, sign:'BANANA HOUSE', signColor:'#ffe14d', glow:0xffe14d, amount:50, text:'BANANA PILE! +$50', kind:'bananas'}); }
 
 function SP(x, top, d, w, len){ // a platform made of blocky stone, with crystal and gold ore underneath
   const m = new THREE.Mesh(boxGeo(w,1,len,1), M.stoneBlock); m.position.set(x, top-.5, -(d+len/2)); m.castShadow = true; m.receiveShadow = true; scene.add(m);
@@ -486,8 +635,9 @@ function axolotl(x, top, d, pool){ // find all 5!
   P(0,0,-6,9,28); bananaGuy(3.2,0,3.5); axolotl(-3.2,0,3);
   block(-.7,0,4.5); block(.7,0,4.5);
   spikes(0,0,9.5,3,1,'stone'); cashArc(0,0,7.5,11.5,3,2.8);
-  spikes(0,0,16,9,1,'grass'); cashArc(0,0,13.5,18.5,5,3.2); chandelier(0,0,12);
-  hang(-2.6,2.9,20); hang(2.6,2.9,20); cashArc(0,0,22.5,24.5,2,2.2);
+  spikes(0,0,16,9,1,'yellow'); cashArc(0,0,13.5,18.5,5,3.2); chandelier(0,0,12);
+  hang(-2.6,2.9,20); hang(2.6,2.9,20); star(0,2.6,20.2); cashArc(0,0,22.5,24.5,2,2.2);
+  moneyStrip(-4.7,0,-6,22); moneyStrip(4.7,0,-6,22);
   P(0,0,25,7,12); spikes(0,0,30,7,1,'stone'); cashArc(0,0,28,32,3,3); block(2,0,34.5); chandelier(-1,0,31);
   P(0,0,40,7,7); checkpoint(41,0,7); hang(1.5,2.8,44);
   // 2: money block parkour
@@ -508,13 +658,13 @@ function axolotl(x, top, d, pool){ // find all 5!
   // 4: skinny beams
   P(-2.2,7.5,137,2.4,9); spikes(-2.2,7.5,141.5,2.4,1,'grass'); cashArc(-2.2,7.5,139.5,143.5,3,3);
   P(2.2,8,148,2.4,9); spikes(2.2,8,152.5,2.4,1,'stone'); cashArc(2.2,8,150.5,154.5,3,3); axolotl(2.2,8,155.9);
-  P(-1,8.5,159,2.4,9); spikes(-1,8.5,163.5,2.4,1,'grass'); cashArc(-1,8.5,161.5,165.5,3,3);
+  P(-1,8.5,159,2.4,9); spikes(-1,8.5,163.5,2.4,1,'yellow'); cashArc(-1,8.5,161.5,165.5,3,3);
   // 5: the money house
   P(0,8.5,171,10,16); checkpoint(172,8.5,10); moneyHouse(8.5,180); bananaGuy(3.9,8.5,175); axolotl(1.6,8.5,182.2);
   hang(-3.6,11.3,176); hang(-3.6,11.3,180); hang(-3.6,11.3,184); hang(3.6,11.3,180); hang(3.6,11.3,184);
   // 6: the spike gauntlet
-  P(0,8.5,190,9,32); richGuy(8.8,10.2,202,-1);
-  spikes(0,8.5,195,9,1,'grass'); cashArc(0,8.5,193,197,3,3);
+  P(0,8.5,190,9,32); richGuy(8.8,10.2,202,-1); moneyStrip(-4.7,8.5,190,222); moneyStrip(4.7,8.5,190,222);
+  spikes(0,8.5,195,9,1,'yellow'); cashArc(0,8.5,193,197,3,3); star(0,12.4,207.5);
   spikes(0,8.5,200.5,9,2,'stone'); cashArc(0,8.5,198.5,202.5,3,3.2); chandelier(0,8.5,198);
   block(-2,8.5,204); block(0,8.5,204); block(2,8.5,204); car(8.5,206.5,9,.3);
   spikes(0,8.5,211.5,9,3,'grass'); cashArc(0,8.5,209,214,5,3.4); chandelier(0,8.5,214);
@@ -536,7 +686,17 @@ function axolotl(x, top, d, pool){ // find all 5!
   MB(1.8,12,288,2.4,M.goldBlock); cash(1.8,14.4,289.2);
   MB(-1.6,12.5,293,2.4,M.silverBlock); gem(-1.6,15,294.2);
   MB(1.4,13,298,2.4,M.goldBlock); cash(1.4,15.4,299.2);
-  P(0,13,C,16,26); chandelier(0,13,C+10);
+  // 10: the Purple Kingdom (Ashton's version 1.1 ideas)
+  P(0,13,303,10,50); checkpoint(304,13,10); moneyStrip(-5.2,13,303,353); moneyStrip(5.2,13,303,353);
+  maxGuy(3.6,13,306.5); star(0,15.2,307.5);
+  purpleHouse(13,312); spikes(-3.85,13,312,1.5,7,'yellow'); spikes(3.85,13,312,1.5,7,'yellow');   // spikes around the purple house
+  juice(-2.3,13,319.5,1.15); juice(2.3,13,323.5,1.15,true); juice(0,13,327,.95);
+  chandelier(0,13,322,true); star(0,15.2,327);
+  laserPerson(-1,13,330,10,0); laserPerson(1,13,337,10,2.5);   // laser 2 fires right after laser 1, so it's off when you get there star(0,15,330); star(0,15,337);   // 7 apart: room to land between them
+  bananaHouse(13,342);
+  spikeLauncher(-1,13,349,10,0); star(0,15.6,349);
+  goldCloud(13,312,350);
+  P(0,13,C,16,26); chandelier(0,13,C+10); moneyStrip(-8.2,13,C,C+26); moneyStrip(8.2,13,C,C+26);
   const add = (geo, mat, x, y, d) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, 13+y, -d); m.castShadow = true; m.receiveShadow = true; scene.add(m); return m; };
   add(new THREE.BoxGeometry(16,9,1.6), M.stone, 0, 4.5, C+25);
   for(let i=0;i<7;i++) add(new THREE.BoxGeometry(1.2,1.2,1.6), M.stone, -6.6+i*2.2, 9.6, C+25);
@@ -549,19 +709,25 @@ function axolotl(x, top, d, pool){ // find all 5!
   [0x29b6f6, 0xff7043, 0x66bb6a, 0xec407a, 0xffca28, 0x26c6da].forEach((c,i) => { const k = buildKing({robe:L(c)}); k.g.scale.setScalar(.62); k.g.position.set(i%2 ? 5.2 : -5.2, 13, -(C + 5 + (i>>1)*5)); k.g.rotation.y = i%2 ? Math.PI/2 : -Math.PI/2; scene.add(k.g); miniKings.push({k, ph:i*1.3}); });
 
   // sky decor: giant bananas, blue clouds, a cloud sea, and giant spikes poking up from below (like the drawing)
-  for(let i=0;i<11;i++){ const b = new THREE.Mesh(G.banana, M.banana); b.scale.setScalar(rnd(10,20)); b.position.set((i%2?1:-1)*rnd(28,50), rnd(2,30), -(8 + i*30)); b.rotation.set(rnd(0,6),rnd(0,6),rnd(0,6)); scene.add(b); spinners.push(b); }
+  for(let i=0;i<13;i++){ const b = new THREE.Mesh(G.banana, M.banana); b.scale.setScalar(rnd(10,20)); b.position.set((i%2?1:-1)*rnd(28,50), rnd(2,30), -(8 + i*30)); b.rotation.set(rnd(0,6),rnd(0,6),rnd(0,6)); scene.add(b); spinners.push(b); }
   const courseY = d => d < 50 ? 0 : d < 88 ? 3 : d < 234 ? 8.5 : d < 250 ? 10.5 : d < 287 ? 11 : 13;
   // the blue sky clouds: every puff of every cloud in one instanced mesh (one draw call)
-  for(let i=0;i<31;i++){ const d = -10 + i*11.5 + rnd(-3,3); skyClouds.push({bx:(i%2?1:-1)*rnd(9,24), y:courseY(d) + rnd(3,13), z:-d, s:rnd(1.2,2.6), ph:i}); }
+  for(let i=0;i<36;i++){ const d = -10 + i*11.5 + rnd(-3,3); skyClouds.push({bx:(i%2?1:-1)*rnd(9,24), y:courseY(d) + rnd(3,13), z:-d, s:rnd(1.2,2.6), ph:i}); }
   skyPuffs = new THREE.InstancedMesh(G.cloud, M.cloud, skyClouds.length * PUFFS.length); skyPuffs.frustumCulled = false; scene.add(skyPuffs);
   const sea = new THREE.InstancedMesh(G.cloud, L(0xeaf4ff, {emissive:0x40508a}), 260), o = new THREE.Object3D();
-  for(let i=0;i<260;i++){ o.position.set(rnd(-110,110), rnd(-36,-16), rnd(60,-420)); o.scale.set(rnd(8,20), rnd(3,6), rnd(7,14)); o.rotation.set(0,0,0); o.updateMatrix(); sea.setMatrixAt(i, o.matrix); }
+  for(let i=0;i<260;i++){ o.position.set(rnd(-110,110), rnd(-36,-16), rnd(60,-480)); o.scale.set(rnd(8,20), rnd(3,6), rnd(7,14)); o.rotation.set(0,0,0); o.updateMatrix(); sea.setMatrixAt(i, o.matrix); }
   sea.frustumCulled = false; scene.add(sea);
   const cone7 = new THREE.ConeGeometry(1,1,7);
-  [[M.grass, 0], [M.stoneSpike, 1]].forEach(([mat, k]) => { const n = 40, im = new THREE.InstancedMesh(cone7, mat, n);
-    for(let i=0;i<n;i++){ const d = -20 + (i*2+k)*(370/(n*2)) + rnd(-3,3), tip = courseY(d) - rnd(2,13), h = tip + 48, r = rnd(2.2,4.6);
+  [[M.grass, 0], [M.stoneSpike, 1]].forEach(([mat, k]) => { const n = 46, im = new THREE.InstancedMesh(cone7, mat, n);
+    for(let i=0;i<n;i++){ const d = -20 + (i*2+k)*(430/(n*2)) + rnd(-3,3), tip = courseY(d) - rnd(2,13), h = tip + 48, r = rnd(2.2,4.6);
       o.position.set((i%2?1:-1)*rnd(11,46), -48 + h/2, -d); o.scale.set(r,h,r); o.rotation.set(rnd(-.06,.06), rnd(0,3), rnd(-.06,.06)); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }
     im.frustumCulled = false; scene.add(im); });
+  // twinkly yellow stars all over the sky (one draw call)
+  const sp = new Float32Array(260*3);
+  for(let i=0;i<260;i++){ const d = -20 + Math.random()*420; sp[i*3] = (i%2?1:-1)*rnd(12,90); sp[i*3+1] = courseY(d) + rnd(24,70); sp[i*3+2] = -d; }
+  const sg = new THREE.BufferGeometry(); sg.setAttribute('position', new THREE.BufferAttribute(sp, 3));
+  skyStars = new THREE.Points(sg, new THREE.PointsMaterial({map:starTex, size:2.6, transparent:true, depthWrite:false, fog:false, color:0xffe14d}));
+  skyStars.frustumCulled = false; scene.add(skyStars);
 })();
 
 // ---------- the green sun ----------
@@ -581,22 +747,23 @@ const sun = new THREE.Group(), sunRays = new THREE.Group();
 
 // ---------- game state ----------
 const keys = {left:false, right:false, fwd:false, back:false};
-const p = {x:0, y:0, z:0, vx:0, vy:0, vz:0, heading:0, ground:null, coyote:0, jumps:0, phase:0, dead:0, bounced:false};
+const p = {x:0, y:0, z:0, vx:0, vy:0, vz:0, heading:0, ground:null, coyote:0, jumps:0, phase:0, dead:0, bounced:false, hurt:0};
 let state = 'title', T = 0, playT = 0, winT = 0, money = 0, bananas = 0, bonks = 0, cp = 0, jumpBuf = 0, firstPerson = false, golds = 0, axoFound = 0;
+let starsGot = 0, blueT = 3, sixT = 0;
 let camX = 0, camY = 0, camSnap = true;
 
 function resetGame(){
-  money = 0; bananas = 0; bonks = 0; cp = 0; playT = 0; winT = 0; golds = 0; axoFound = 0;
+  money = 0; bananas = 0; bonks = 0; cp = 0; playT = 0; winT = 0; golds = 0; axoFound = 0; starsGot = 0; blueT = 3;
   for(const a of axos){ a.found = false; a.slot = 0; a.gl.visible = true; a.a.g.scale.setScalar(1); a.a.g.position.set(a.x, a.top, a.z); a.a.g.rotation.set(0, Math.PI, 0); }
   for(const b of blocks){ b.used = false; b.mesh.material = M.bonus; }
   for(const c of cashes){ c.taken = false; c.g.visible = true; }
-  if(jackpot){ jackpot.taken = false; jackpot.glow.visible = true; }
+  for(const hs of houses){ hs.prize.taken = false; hs.prize.glow.visible = true; if(hs.prize.coins) hs.prize.coins.visible = true; }
   checkpoints.forEach((c,i) => { c.reached = !i; if(c.mat){ c.mat.color.set(0x8d86a8); c.mat.emissive.set(0x000000); } });
   respawn();
 }
 function respawn(){
   const c = checkpoints[cp];
-  Object.assign(p, {x:c.x, y:c.top, z:-(c.d+.6), vx:0, vy:0, vz:0, heading:0, ground:null, jumps:0, dead:0, coyote:.1, bounced:false});
+  Object.assign(p, {x:c.x, y:c.top, z:-(c.d+.6), vx:0, vy:0, vz:0, heading:0, ground:null, jumps:0, dead:0, coyote:.1, bounced:false, hurt:0});
   king.g.rotation.set(0,0,0); camSnap = true; hist = []; trail = []; sonS = {x:p.x, y:p.y, z:p.z+.5, h:0, air:false, ph:0, mv:0};
 }
 resetGame();
@@ -676,11 +843,13 @@ function floatText(str, x, y, z, color){
   floats.push({s, life:1});
 }
 // Falling things: every item of one kind is drawn together as one instanced mesh (one draw call per kind).
-const ITEM = {bill:{geo:G.bill, mat:M.bill, s:1, cap:260}, banana:{geo:G.banana, mat:M.banana, s:1.25, cap:120}, gold:{geo:G.goldBar, mat:M.gold, s:1.15, cap:140}, silver:{geo:G.coin, mat:M.silver, s:1.3, cap:60}};
+const ITEM = {bill:{geo:G.bill, mat:M.bill, s:1, cap:260}, banana:{geo:G.banana, mat:M.banana, s:1.25, cap:120}, gold:{geo:G.goldBar, mat:M.gold, s:1.15, cap:160}, silver:{geo:G.coin, mat:M.silver, s:1.3, cap:60},
+  blue:{geo:G.bill, mat:M.blueBill, s:.7, cap:40}};   // blue money: mini, rare, worth $25
+const floaty = t => t === 'bill' || t === 'blue';   // paper money flutters down slowly
 for(const t in ITEM){ const I = ITEM[t]; I.im = new THREE.InstancedMesh(I.geo, I.mat, I.cap); I.im.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
   I.im.count = 0; I.im.frustumCulled = false; I.im.castShadow = t === 'gold'; scene.add(I.im); }
 function drawItems(){
-  const k = {bill:0, banana:0, gold:0, silver:0};
+  const k = {bill:0, banana:0, gold:0, silver:0, blue:0};
   for(const it of items){ const I = ITEM[it.type]; if(k[it.type] >= I.cap) continue; it.m.updateMatrix(); I.im.setMatrixAt(k[it.type]++, it.m.matrix); }
   for(const t in ITEM){ ITEM[t].im.count = k[t]; ITEM[t].im.instanceMatrix.needsUpdate = true; }
 }
@@ -688,8 +857,14 @@ function spawnItem(type, x, y, z, o){
   let m = pools[type].pop();
   if(!m) m = new THREE.Object3D();   // just a position/rotation/size; drawItems() draws it
   m.visible = true; m.scale.setScalar(ITEM[type].s); m.rotation.set(rnd(0,6), rnd(0,6), rnd(0,6));
-  const it = Object.assign({type, m, x, y, z, vx:0, vz:0, vy: type === 'bill' ? -3 : -rnd(6,8), ph:rnd(0,6), landed:false, life:6}, o);
+  const it = Object.assign({type, m, x, y, z, vx:0, vz:0, vy: floaty(type) ? -3 : -rnd(6,8), ph:rnd(0,6), landed:false, life:6}, o);
   items.push(it); return it;
+}
+function hurt(text, cost){ // a weak hit (yellow spikes, purple juice): knocked back and lose a little money, but no checkpoint
+  if(p.hurt > 0 || p.dead > 0) return;
+  p.hurt = .8; p.vz = 8; p.vy = 8; p.ground = null; p.jumps = 1; p.coyote = 0;
+  const lost = Math.min(money, cost); money -= lost;
+  beep(330,.22,'square',.05,180); burst(p.x, p.y+1, p.z, 10, 4, [3,6]); floatText(lost ? text + ' -$' + lost : text, p.x, p.y+2.6, p.z, '#ffb3b3');
 }
 function ouch(){
   if(p.dead > 0) return;
@@ -724,18 +899,39 @@ function update(dt){
       if(h.on && !was && state === 'play' && Math.abs(h.z0 - p.z) < 14) beep(180,.18,'sawtooth',.03,120);
     }
     if(h.sweep){ h.ang = T*h.w + h.ph; h.g.rotation.y = h.ang; }
+    if(h.timed){ // the laser guys fire every 3 seconds; their eyes flash right before
+      h.u = ((T + h.ph) % 3 + 3) % 3; const was = h.on; h.on = h.u < .9; const charge = !h.on && h.u > 2.2;
+      h.beamG.visible = h.on; h.eyeMat.color.set(h.on ? 0xff2020 : charge ? (Math.sin(T*40) > 0 ? 0xffffff : 0xff4040) : 0x7a1010);
+      if(h.on && !was && state === 'play' && Math.abs(h.z0 - p.z) < 16) beep(760,.3,'sawtooth',.035,240);
+    }
+    if(h.flyer){ // flying spikes
+      h.t = ((T + h.ph) % h.period + h.period) % h.period; const vis = h.t < h.travel; h.ball.visible = vis;
+      if(vis){ h.ball.position.set(h.xs + (h.xe - h.xs)*h.t/h.travel, h.top + 1.0, h.z); h.ball.rotation.z -= dt*12*Math.sign(h.xe - h.xs); h.ball.rotation.x += dt*5; }
+      if(vis && !h.wasVis && state === 'play' && Math.abs(h.z - p.z) < 18) beep(140,.25,'square',.04,80);
+      h.wasVis = vis;
+    }
+    if(h.juice){ h.bubbles.forEach((b, i) => { const k = (T*.7 + b.ph) % 1, s = 1.5 + k*1.5; puffO.position.set(b.x, .08 + k*.3, b.z); puffO.scale.set(s,s,s); puffO.updateMatrix(); h.bub.setMatrixAt(i, puffO.matrix); });
+      h.bub.instanceMatrix.needsUpdate = true; }
   }
+  for(const gc of goldClouds){ // the yellow cloud drifts along the Purple Kingdom raining gold
+    const f = (Math.sin(T*.18 + gc.ph) + 1)/2, d = gc.d0 + (gc.d1 - gc.d0)*f;
+    gc.g.position.set(Math.sin(T*.6)*2.5, gc.top + 7.5 + Math.sin(T*1.3)*.3, -d);
+    gc.t -= dt; if(gc.t <= 0){ gc.t = rnd(.18,.35); if(state === 'play' && Math.abs(-d - p.z) < 40) spawnItem('gold', gc.g.position.x + rnd(-1.8,1.8), gc.g.position.y - 1, gc.g.position.z + rnd(-1.2,1.2), {vy:-2, drop:true}); }
+  }
+  if(skyStars) skyStars.material.opacity = .75 + Math.sin(T*2.5)*.2;
   for(const b of blocks){ b.bump = Math.max(0, b.bump - dt*4); b.mesh.position.y = b.by + Math.sin(b.bump*Math.PI)*.35; }
   for(const c of cashes) if(!c.taken){
     if(c.kind === 'cash'){ c.m.rotation.y = T*2.2 + c.ph; c.g.position.y = c.y + Math.sin(T*2.4 + c.ph)*.14; }
     else if(c.kind === 'gem'){ c.m.rotation.y = T*1.8 + c.ph; c.g.position.y = c.y + Math.sin(T*2 + c.ph)*.15; }
+    else if(c.kind === 'star'){ c.m.rotation.y = T*3 + c.ph; c.g.position.y = c.y + Math.sin(T*2.6 + c.ph)*.15; }
     else c.g.rotation.z = Math.sin(T*1.8 + c.ph)*.12;
   }
   for(const pd of pads){ pd.squash = Math.max(0, pd.squash - dt*3); pd.g.scale.y = 1 - Math.sin(pd.squash*Math.PI)*.55; }
   for(const c of chands){
     const a = Math.sin(T*1.1 + c.ph)*.09; c.sw.rotation.z = a; c.sw.rotation.x = Math.cos(T*.8 + c.ph)*.05;
     c.t -= dt;
-    if(c.t <= 0){ c.t = rnd(1.2,2.8); if(Math.abs(c.z - p.z) < 45){ const an = rnd(0,6.28), r = rnd(.6,1.8); spawnItem('banana', c.x + Math.cos(an)*r + Math.sin(a)*8, c.y - 1.2, c.z + Math.sin(an)*r, {vy:-1.5, drop:true}); } }
+    if(c.t <= 0){ c.t = c.money ? rnd(.35,.8) : rnd(1.2,2.8);   // the double banana chandelier drops money, the others drop bananas
+      if(Math.abs(c.z - p.z) < 45){ const an = rnd(0,6.28), r = rnd(.6,1.8); spawnItem(c.money ? (Math.random() < .35 ? 'gold' : 'bill') : 'banana', c.x + Math.cos(an)*r + Math.sin(a)*8, c.y - 1.2, c.z + Math.sin(an)*r, {vy:-1.5, drop:true}); } }
   }
   for(const n of npcs){
     const near = state === 'play' && Math.hypot(n.x-p.x, n.z-p.z) < 9 && Math.abs(n.top-p.y) < 5;
@@ -763,28 +959,32 @@ function update(dt){
   skyClouds.forEach((c, i) => { const cx = c.bx + Math.sin(T*.25 + c.ph)*1.5;
     PUFFS.forEach((q, j) => { puffO.position.set(cx + q[0]*c.s, c.y + q[1]*c.s, c.z + q[2]*c.s); puffO.scale.set(q[3]*c.s, q[3]*.7*c.s, q[3]*c.s); puffO.updateMatrix(); skyPuffs.setMatrixAt(i*PUFFS.length + j, puffO.matrix); }); });
   skyPuffs.instanceMatrix.needsUpdate = true;
-  miniKings.forEach(mk => { const h = Math.abs(Math.sin(T*(state === 'win' ? 7 : 3) + mk.ph)); mk.k.g.position.y = 13 + h*(state === 'win' ? .9 : .25); animKing(mk.k, 0, 0, state === 'win' || h > .6, T); });
+  miniKings.forEach(mk => { const h = Math.abs(Math.sin(T*(state === 'win' ? 7 : 3) + mk.ph)); mk.k.g.position.y = 13 + h*(state === 'win' ? .9 : .25);
+    if(state === 'win') sixSeven(mk.k, T + mk.ph); else animKing(mk.k, 0, 0, h > .6, T); });
   spinners.forEach((b,i) => { b.rotation.x += dt*.15; b.rotation.y += dt*(.1 + i*.01); });
   sunRays.rotation.z += dt*.15; const sc = .27*(1 + Math.sin(T*1.5)*.02); sun.scale.set(sc,sc,sc);
-  if(jackpot){ const fade = !firstPerson && state === 'play' && -p.z > jackpot.d0 - 3.5 && -p.z < jackpot.d1 + 1; for(const m of [M.house, M.houseRoof]){ m.opacity += ((fade ? .22 : 1) - m.opacity)*Math.min(1, dt*8); m.depthWrite = m.opacity > .9; } }
+  for(const hs of houses){ const fade = !firstPerson && state === 'play' && -p.z > hs.d0 - 3.5 && -p.z < hs.d1 + 8.5;   // see through a house while you (and the camera behind you) are in it
+    for(const m of hs.mats){ m.opacity += ((fade ? .22 : 1) - m.opacity)*Math.min(1, dt*8); m.depthWrite = m.opacity > .9; } }
 
   // rain: money + bananas from the sky
   // money, bananas, GOLD and silver all fall from the sky
-  const cnt = {bill:0, banana:0, gold:0, silver:0}; for(const it of items) cnt[it.type]++;
+  const cnt = {bill:0, banana:0, gold:0, silver:0, blue:0}; for(const it of items) cnt[it.type]++;
   const big = state === 'win' ? 2 : 1;
   for(let i=0; i<3 && cnt.bill < 80*big; i++, cnt.bill++) spawnItem('bill', p.x + rnd(-16,16), p.y + (T < .5 ? rnd(0,22) : rnd(15,22)), p.z + rnd(-48,9));
   const rain = (type, max, rate, spread) => { if(cnt[type] < max*big && Math.random() < dt*rate*big){ cnt[type]++; spawnItem(type, p.x + rnd(-spread,spread), p.y + rnd(15,22), p.z + rnd(-44,6)); } };
   rain('banana', 14, 5, 12); rain('gold', 18, 9, 8); rain('silver', 12, 6, 10);
+  // blue money: 3 at a time, every 3 seconds, just ahead of the king
+  if(state === 'play'){ blueT -= dt; if(blueT <= 0){ blueT = 3; for(let i=0;i<3;i++) spawnItem('blue', p.x + rnd(-2.5,2.5), p.y + rnd(8,10), p.z - rnd(5,11), {vy:-3}); } }
   for(const it of items){
     if(it.landed){ it.life -= dt; if(it.life < .6) it.m.scale.setScalar(Math.max(.01, it.life/.6)); if(it.life <= 0) it.gone = true; }
     else {
       const y0 = it.y;
-      if(it.type === 'bill'){ it.vy = Math.max(it.vy - 14*dt, -3); it.x += (it.vx + Math.sin(T*2.2 + it.ph)*.9)*dt; it.z += it.vz*dt; it.vx *= 1-2*dt; it.vz *= 1-2*dt; it.m.rotation.x += dt*2.3; it.m.rotation.y += dt*1.4; }
+      if(floaty(it.type)){ it.vy = Math.max(it.vy - 14*dt, -3); it.x += (it.vx + Math.sin(T*2.2 + it.ph)*.9)*dt; it.z += it.vz*dt; it.vx *= 1-2*dt; it.vz *= 1-2*dt; it.m.rotation.x += dt*2.3; it.m.rotation.y += dt*1.4; }
       else { if(it.drop) it.vy = Math.max(it.vy - 14*dt, -9); it.x += it.vx*dt; it.z += it.vz*dt; it.vx *= 1 - .8*dt; it.vz *= 1 - .8*dt; it.m.rotation.x += dt*3; it.m.rotation.z += dt*2.2; }
       it.y += it.vy*dt;
       const ly = it.vy < 0 ? landTop(it.x, it.z, y0-.12, it.y-.12) : null;
       if(ly !== null){ it.landed = true; it.life = 6;
-        if(it.type === 'bill'){ it.y = ly+.06; it.m.rotation.set(-Math.PI/2, 0, rnd(0,6)); }
+        if(floaty(it.type)){ it.y = ly+.06; it.m.rotation.set(-Math.PI/2, 0, rnd(0,6)); }
         else if(it.type === 'banana'){ it.y = ly+.16; it.m.rotation.set(Math.PI/2, 0, rnd(0,6)); }
         else if(it.type === 'gold'){ it.y = ly+.1; it.m.rotation.set(0, rnd(0,6), 0); }
         else { it.y = ly+.04; it.m.rotation.set(Math.PI/2, 0, 0); } }
@@ -796,6 +996,7 @@ function update(dt){
       if(it.type === 'banana'){ bananas++; money += 5; beep(700,.1,'triangle',.07,1100); burst(it.x,it.y,it.z,5,3,[4,2]); floatText('+5', it.x, it.y+.6, it.z); }
       else if(it.type === 'gold'){ golds++; money += 3; beep(1046,.07,'triangle',.06); beep(1568,.12,'triangle',.05,null,.05); burst(it.x,it.y,it.z,4,2.5,[0,4]); floatText('+$3', it.x, it.y+.6, it.z, '#ffd447'); }
       else if(it.type === 'silver'){ money += 2; beep(1760,.08,'sine',.05,2400); floatText('+$2', it.x, it.y+.6, it.z, '#e6ecf5'); }
+      else if(it.type === 'blue'){ money += 25; beep(1568,.08,'triangle',.06); beep(2093,.14,'triangle',.05,null,.06); burst(it.x,it.y,it.z,6,3,[5,2]); floatText('+$25', it.x, it.y+.6, it.z, '#6ac8ff'); }
       else { money += 1; beep(1300,.05,'square',.025); }
     }
   }
@@ -808,13 +1009,15 @@ function update(dt){
   if(state === 'title'){ animKing(king, 0, 0, false, T); son.g.position.set(p.x+1.1, p.y + Math.abs(Math.sin(T*4))*.3, p.z+.2); son.g.rotation.y = 0; animKing(son, 0, 0, Math.abs(Math.sin(T*4)) > .5, T); return; }
   if(state === 'win'){
     winT += dt; p.vy -= GRAV*dt; p.y += p.vy*dt; if(p.y <= 13){ p.y = 13; p.vy = 8.5; }
-    animKing(king, 0, 0, true, T);
-    son.g.position.set(p.x+1.4, 13 + Math.abs(Math.sin(T*7))*.8, p.z+.4); son.g.rotation.y = Math.PI; animKing(son, 0, 0, true, T);
+    sixSeven(king, T);
+    son.g.position.set(p.x+1.4, 13 + Math.abs(Math.sin(T*7))*.8, p.z+.4); son.g.rotation.y = Math.PI; sixSeven(son, T + .4);
+    sixT -= dt; if(sixT <= 0){ sixT = 1.6; floatText('6 7!', p.x + rnd(-1.2,1.2), p.y + 3.4, p.z, '#ffe14d'); }
     for(const a of axos) if(a.found){ const an = T*1.5 + a.slot*1.26; a.a.g.position.set(p.x + Math.cos(an)*2.6, 13 + Math.abs(Math.sin(T*6 + a.slot))*.5, p.z + Math.sin(an)*2.6); a.a.g.rotation.y = -an; }
     if(Math.random() < dt*30) burst(p.x + rnd(-6,6), p.y + rnd(4,7), p.z + rnd(-3,5), 2, 2.5, [0,1,3,5,6]);
     return;
   }
   playT += dt;
+  p.hurt = Math.max(0, p.hurt - dt);
 
   if(p.dead > 0){
     p.dead -= dt; p.vy -= GRAV*dt; p.y += p.vy*dt; p.z += p.vz*dt; king.g.rotation.x -= dt*14;
@@ -825,7 +1028,7 @@ function update(dt){
   // run
   let tx = (keys.right?1:0) - (keys.left?1:0), tz = (keys.back?1:0) - (keys.fwd?1:0); const l = Math.hypot(tx,tz);
   if(l > 0){ tx = tx/l*SPEED; tz = tz/l*SPEED; }
-  const acc = (p.ground ? 60 : 30)*dt;
+  const acc = (p.hurt > .55 ? 0 : p.ground ? 60 : 30)*dt;   // right after a knockback you can't steer, so you really get bounced back
   p.vx = approach(p.vx, tx, acc); p.vz = approach(p.vz, tz, acc);
   if(l > 0){ const want = Math.atan2(-tx,-tz); let d = want - p.heading; while(d > Math.PI) d -= 2*Math.PI; while(d < -Math.PI) d += 2*Math.PI; p.heading += d*Math.min(1, dt*14); }
   const sp = Math.hypot(p.vx, p.vz); p.phase += sp*dt*1.7;
@@ -873,26 +1076,37 @@ function update(dt){
     c.taken = true; c.g.visible = false;
     if(c.kind === 'cash'){ money += 10; beep(988,.07,'square',.05); beep(1319,.16,'square',.05,null,.06); burst(c.x,c.y,c.z,7,3,[1,0,2]); floatText('+$10', c.x, c.y+.7, c.z, '#7dff8a'); }
     else if(c.kind === 'gem'){ money += 25; [1568,2093,2637].forEach((f,i) => beep(f,.12,'triangle',.05,null,i*.06)); burst(c.x,c.y,c.z,12,3.5,[5,6,2]); floatText('CRYSTAL +$25', c.x, c.y+.8, c.z, '#9ff6ff'); }
+    else if(c.kind === 'star'){ starsGot++; money += 20; [1319,1760,2637].forEach((f,i) => beep(f,.1,'sine',.06,null,i*.05)); burst(c.x,c.y,c.z,12,3.5,[0,4,2]); floatText('STAR! +$20', c.x, c.y+.8, c.z, '#fff27a'); }
     else { bananas++; money += 5; beep(700,.1,'triangle',.07,1100); burst(c.x,c.y,c.z,6,3,[4,2]); floatText('+5', c.x, c.y+.7, c.z); }
   }
-  // the money house jackpot
-  if(jackpot && !jackpot.taken && Math.abs(p.x) < 1.8 && Math.abs(p.z - jackpot.z) < 1 && Math.abs(p.y - jackpot.top) < 2){
-    jackpot.taken = true; jackpot.glow.visible = false; money += 100;
+  // houses: run through the door to grab the prize inside (money house jackpot, pot of gold, banana pile)
+  for(const hs of houses){ const j = hs.prize;
+    if(j.taken || Math.abs(p.x) > 1.8 || Math.abs(p.z - j.z) > 1 || Math.abs(p.y - j.top) > 2) continue;
+    j.taken = true; j.glow.visible = false; if(j.coins) j.coins.visible = false; money += j.amount;
+    if(j.kind === 'bananas') bananas += 10;
     [784,988,1175,1568].forEach((f,i) => beep(f,.18,'square',.06,null,i*.08));
-    floatText('JACKPOT! +$100', p.x, p.y+2.4, p.z, '#7dff8a'); burst(p.x, p.y+1.5, p.z, 24, 4, [1,0,4]);
-    // the money bursts up out of the house and rains back down on the king
-    for(let i=0;i<14;i++) spawnItem(i%3 ? 'bill' : 'gold', rnd(-1.6,1.6), jackpot.top + rnd(2.8,3.4), jackpot.z + rnd(-2,2), {vy:rnd(4,7), vx:rnd(-2,2), vz:rnd(-2,2), drop:true});
+    floatText(j.text, p.x, p.y+2.4, p.z, j.color); burst(p.x, p.y+1.5, p.z, 24, 4, j.kind === 'bananas' ? [4,0] : [1,0,4]);
+    // the prize bursts up out of the house and rains back down on the king
+    for(let i=0, n = j.kind === 'pot' ? 24 : 14; i<n; i++)
+      spawnItem(j.kind === 'bananas' ? 'banana' : j.kind === 'pot' ? (i%4 ? 'gold' : 'bill') : (i%3 ? 'bill' : 'gold'), rnd(-1.6,1.6), j.top + rnd(2.0,2.6), j.z + rnd(-2,2), {vy:rnd(1,3), vx:rnd(-2,2), vz:rnd(-2,2), drop:true});
   }
   // spikes, cars + falling
   for(const h of hazards){
-    if(h.gate && !h.on) continue;
+    if((h.gate || h.timed) && !h.on) continue;
+    if(h.flyer && !h.ball.visible) continue;
     let touch;
     if(h.sweep){ const rx = p.x, rz = p.z - h.cz, c = Math.cos(h.ang), s = Math.sin(h.ang), along = rx*c - rz*s, perp = rx*s + rz*c;
       touch = Math.abs(along) < h.R + HW && Math.abs(perp) < HW + .08 && p.y < h.y1 && p.y+HT > h.y0; }
+    else if(h.juice) touch = Math.hypot(p.x - h.cx, p.z - h.cz) < h.r - .05 && p.y < h.y1;   // standing in the puddle
+    else if(h.flyer){ const b = h.ball.position, cx = Math.max(p.x-HW, Math.min(p.x+HW, b.x)), cy = Math.max(p.y, Math.min(p.y+HT, b.y)), cz = Math.max(p.z-HW, Math.min(p.z+HW, b.z));
+      touch = Math.hypot(cx - b.x, cy - b.y, cz - b.z) < h.r; }
     else touch = p.x+HW-.08 > h.x0 && p.x-HW+.08 < h.x1 && p.z+HW-.08 > h.z0 && p.z-HW+.08 < h.z1 && p.y < h.y1 && p.y+HT > h.y0;
     if(!touch || p.dead > 0) continue;
+    if(h.weak){ hurt(h.juice ? 'YUCK! POISON!' : 'OUCH!', h.juice ? 10 : 5); continue; }   // yellow spikes and purple juice only knock you back
     if(h.car) beep(520,.12,'square',.06,500);
-    if(h.laser || h.gate || h.sweep){ beep(1400,.25,'sawtooth',.05,150); floatText('ZAP!', p.x, p.y+3.3, p.z, '#ff6a6a'); }
+    if(h.laser || h.gate || h.sweep || h.timed){ beep(1400,.25,'sawtooth',.05,150); floatText('ZAP!', p.x, p.y+3.3, p.z, '#ff6a6a'); }
+    if(h.black){ beep(110,.4,'sawtooth',.06,60); floatText('BLACK JUICE!', p.x, p.y+3.3, p.z, '#c8c8d8'); }
+    if(h.flyer) floatText('BONK!', p.x, p.y+3.3, p.z, '#ffffff');
     ouch();
   }
   if(p.y < checkpoints[cp].top - 14){ bonks++; beep(500,.5,'sine',.07,80); respawn(); }
@@ -901,7 +1115,9 @@ function update(dt){
     if(-p.z > c.d && Math.abs(p.y - c.top) < 1.5 && p.ground){ cp = i; c.reached = true; c.mat.color.set(0xffc928); c.mat.emissive.set(0x4a3000);
       beep(660,.1,'triangle',.07); beep(990,.25,'triangle',.07,null,.1); burst(c.sx, c.top+2, -c.d-.6, 24, 5, [0,4,2]); floatText('CHECKPOINT!', p.x, p.y+2.8, p.z); } }
   if(-p.z > GOAL_D && p.y > 12.5 && p.ground){
-    state = 'win'; winT = 0; Object.assign(p, {x:0, y:13, z:-(C+19), vx:0, vz:0, vy:8.5, heading:Math.PI}); camSnap = true;
+    state = 'win'; winT = 0; sixT = 0; Object.assign(p, {x:0, y:13, z:-(C+19), vx:0, vz:0, vy:8.5, heading:Math.PI}); camSnap = true;
+    money += 500; floatText('FINISH! +$500', 0, 13+4.2, -(C+19), '#7dff8a');   // money when you reach the finish
+    for(let i=0;i<40;i++) spawnItem(i%3 ? 'bill' : (i%2 ? 'gold' : 'blue'), rnd(-3,3), 13 + rnd(5,9), -(C+19) + rnd(-3,3), {vy:rnd(1,4), vx:rnd(-2,2), vz:rnd(-2,2), drop:true});
     [523,659,784,1047,784,1047,1319].forEach((f,i) => beep(f,.28,'square',.06,null,i*.14)); showUI(); return;
   }
   animKing(king, p.phase, Math.min(1, sp/SPEED), !p.ground, T);
@@ -933,6 +1149,7 @@ function render(dt){
     else { camera.position.set(camX, camY+3.7, p.z+7.6); lookV.set(camX, camY+1.2, p.z-5); }
   }
   camera.lookAt(lookV);
+  if(window.__cam){ camera.position.copy(window.__cam.p); camera.lookAt(window.__cam.t); }   // testing only: look from anywhere
   // hide a bonus block or the laser-gate ceiling while the chase camera is inside it or right behind it
   const chase = state === 'play' && !firstPerson, c = camera.position;
   for(const o of occluders) o.mesh.visible = !(chase && c.x > o.x0 - 1.2 && c.x < o.x1 + 1.2 && c.y > o.y0 - 1.2 && c.y < o.y1 + .6 && c.z > o.z0 - .3 && c.z < o.z1 + 3);
@@ -946,7 +1163,7 @@ function render(dt){
   drawItems();
   renderer.render(scene, camera);
   if(state === 'play'){
-    $('money').textContent = money; $('ban').textContent = bananas; $('ouch').textContent = bonks; $('gold').textContent = golds; $('axo').textContent = axoFound; $('t').textContent = playT.toFixed(1) + 's';
+    $('money').textContent = money; $('ban').textContent = bananas; $('ouch').textContent = bonks; $('gold').textContent = golds; $('stars').textContent = starsGot; $('axo').textContent = axoFound; $('t').textContent = playT.toFixed(1) + 's';
     const f = Math.max(0, Math.min(1, -p.z/GOAL_D)); $('fill').style.width = f*100 + '%'; $('crown').style.left = f*100 + '%';
     $('hint').style.opacity = playT < 9 ? 1 : 0;
   }
@@ -961,7 +1178,7 @@ function showUI(){
                                             : 'W / ↑ run forward  ·  A D / ← → steer  ·  SPACE jump  ·  SPACE again in the air = DOUBLE JUMP  ·  V = see through the king\'s eyes';
   const o = $('overlay'); o.style.display = play ? 'none' : 'flex';
   if(state === 'title') o.innerHTML = '<div><h1>BANANA KING <b>3D</b></h1><p class="by">A game by Ashton</p></div><div><p>Jump over spikes and lasers. Grab the money, gold and crystals. Find all 5 axolotls. Reach the castle to win!</p><p>' + controls + '</p><p class="go">' + go + ' TO START</p><button class="pv" id="privacyBtn">Privacy</button></div>';
-  if(state === 'win') o.innerHTML = '<div><h1>YOU WIN!</h1><p style="font-size:min(5vw,34px);color:#7dff6a">All hail the Banana King and his son! 👑</p></div><div><p>Money: $' + money + ' &nbsp;·&nbsp; Gold: ' + golds + ' &nbsp;·&nbsp; Bananas: ' + bananas + ' &nbsp;·&nbsp; Axolotls: ' + axoFound + '/5 &nbsp;·&nbsp; Ouches: ' + bonks + ' &nbsp;·&nbsp; Time: ' + playT.toFixed(1) + 's</p>' + (axoFound === 5 ? '<p style="color:#ff9cc8">You found every axolotl! 🎉</p>' : '') + '<p class="go">' + go + ' TO PLAY AGAIN</p></div>';
+  if(state === 'win') o.innerHTML = '<div><h1>YOU WIN!</h1><p style="font-size:min(5vw,34px);color:#7dff6a">All hail the Banana King and his son! 👑</p><p style="font-size:min(11vw,76px);color:#ffe14d;margin:.05em 0 0">6 7!</p></div><div><p style="color:#7dff8a">Finish bonus: +$500!</p><p>Money: $' + money + ' &nbsp;·&nbsp; Gold: ' + golds + ' &nbsp;·&nbsp; Stars: ' + starsGot + ' &nbsp;·&nbsp; Bananas: ' + bananas + ' &nbsp;·&nbsp; Axolotls: ' + axoFound + '/5 &nbsp;·&nbsp; Ouches: ' + bonks + ' &nbsp;·&nbsp; Time: ' + playT.toFixed(1) + 's</p>' + (axoFound === 5 ? '<p style="color:#ff9cc8">You found every axolotl! 🎉</p>' : '') + '<p class="go">' + go + ' TO PLAY AGAIN</p></div>';
 }
 showUI();
 
@@ -990,8 +1207,12 @@ window.__shot = function(name){
     run(() => jackpot.taken); step(24); }
   if(name === 'eyes'){ begin(7, 0, 260.5, 11); money = 470; golds = 18; bananas = 9; followers(3); firstPerson = true; camSnap = true;
     const gate = hazards.find(h => h.gate); for(let i=0; i<400 && !(gate.on && gate.u > .3); i++) step(1); }
-  if(name === 'win'){ begin(8, 0, 318, 13); followers(5); run(() => state === 'win'); step(160);
-    money = 1086; golds = 31; bananas = 14; bonks = 2; playT = 96.4; showUI(); }
+  if(name === 'win'){ begin(9, 0, C+13, 13); followers(5); run(() => state === 'win'); step(160);
+    money = 1964; golds = 38; bananas = 26; starsGot = 7; bonks = 2; playT = 118.6; showUI(); }
+  if(name === 'purple'){ begin(9, 0, 304.8, 13); money = 1180; golds = 26; bananas = 14; starsGot = 2; followers(5);
+    run(() => -p.z > 306.0); step(2); }
+  if(name === 'lasers'){ begin(9, 0, 328.0, 13); money = 1455; golds = 31; bananas = 14; starsGot = 4; followers(5);
+    run(() => -p.z > 328.1); const lp = hazards.find(h => h.timed); for(let i=0; i<400 && !(lp.on && lp.u > .3); i++) step(1); }
   render(0); frozen = name !== 'title';
 };
 

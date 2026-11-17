@@ -11,7 +11,7 @@ OUT=../appstore/screenshots; mkdir -p "$OUT"
 xcodebuild -project BananaKing3D.xcodeproj -scheme BananaKing3D -configuration Debug \
   -destination "platform=iOS Simulator,id=$DEV" -derivedDataPath build/sim build -quiet
 xcrun simctl install "$DEV" build/sim/Build/Products/Debug-iphonesimulator/BananaKing3D.app
-ALL="runway jump mine house eyes win"
+ALL="runway jump mine house eyes win purple lasers"
 SHOTS="${*:3}"; SHOTS="${SHOTS:-$ALL}"
 for shot in $SHOTS; do
   n=1; for s in $ALL; do [ "$s" = "$shot" ] && break; n=$((n+1)); done

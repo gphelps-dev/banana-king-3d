@@ -1,5 +1,25 @@
 # Banana King 3D: everything to paste into App Store Connect
 
+## Version 1.1: What's New (paste into "What's New in This Version")
+
+```
+Ashton's new ideas are here!
+• The Purple Kingdom: a whole new part of the course before the castle
+• A purple house with a pot of gold inside, and a banana house
+• Two laser guys with mean eyebrows, and flying spikes
+• Purple poison juice and black juice: watch your step!
+• Yellow spikes just knock you back; green and black stone spikes are tougher
+• Meet Max (POOP MAX!) and Lily on the double banana chandelier that drops money
+• Blue money, yellow stars to collect, a cloud that rains gold, and big strips of money
+• A $500 finish bonus, and 6 7! at the end
+```
+
+For 1.1, upload a new build (1.1, build 2), click **+** next to iOS App on the left to add version 1.1, paste the text above,
+pick the new build, and submit. Everything else (description, screenshots, privacy, age rating) carries over from 1.0.
+New screenshots of the Purple Kingdom are optional: `ios/make-screenshots.sh` now also makes `purple` and `lasers` shots.
+
+---
+
 Each value goes in the App Store Connect field with the same name. Lengths were checked against Apple's limits.
 
 ---
