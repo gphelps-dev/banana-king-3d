@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+Icon?
+
+# Xcode
+build/
+DerivedData/
+xcuserdata/
+*.xcuserstate
+*.xcarchive
+
+# local tool settings
+.claude/

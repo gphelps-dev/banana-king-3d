@@ -1,0 +1,911 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+<title>Banana King 3D</title>
+<style>
+  html,body{margin:0;height:100%;background:#1b1033;overflow:hidden;touch-action:none;font-family:system-ui,-apple-system,sans-serif;color:#fff}
+  canvas{display:block}
+  .o{text-shadow:0 2px 0 #1b1033,0 -2px 0 #1b1033,2px 0 0 #1b1033,-2px 0 0 #1b1033,0 4px 8px #0008;font-weight:900}
+  #hud{position:fixed;left:calc(16px + env(safe-area-inset-left));top:calc(12px + env(safe-area-inset-top));font-size:26px;line-height:1.25;display:none}
+  #hud .m{color:#7dff8a;font-size:34px} #hud .b{color:#ffe14d} #hud .g{color:#ffd447;font-size:22px} #hud .a{color:#ff9cc8;font-size:22px} #hud .x{color:#ffb3b3;font-size:17px}
+  #time{position:fixed;right:calc(16px + env(safe-area-inset-right));top:calc(12px + env(safe-area-inset-top));font-size:24px;display:none;text-align:right}
+  #time small{display:block;font-size:13px;opacity:.85;font-weight:700}
+  #bar{position:fixed;left:50%;top:18px;width:min(40vw,420px);height:12px;margin-left:calc(min(40vw,420px)/-2);background:#0007;border-radius:8px;display:none}
+  #fill{height:100%;width:0;background:linear-gradient(90deg,#ffd447,#7dff6a);border-radius:8px}
+  #bar span{position:absolute;top:-9px;font-size:20px} #crown{left:0;margin-left:-10px} #castle{right:-28px}
+  #overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:space-between;padding:3vh 12px 4vh;box-sizing:border-box;text-align:center;background:radial-gradient(ellipse at center,#1b103300 35%,#1b1033cc 100%);pointer-events:none}
+  #overlay h1{font-size:min(11vw,13vh,96px);margin:0;color:#ffe14d;line-height:.95;animation:bob 2s ease-in-out infinite}
+  #overlay h1 b{color:#7dff6a}
+  #overlay p{font-size:min(3.2vw,22px);margin:.5em 0 0}
+  #overlay .go{font-size:min(5vw,36px);margin-top:.8em;animation:blink 1s steps(2) infinite}
+  #overlay .by{color:#ffb37a}
+  #hint{position:fixed;left:0;right:0;bottom:14px;text-align:center;font-size:17px;transition:opacity 1s}
+  @keyframes bob{50%{transform:translateY(-10px) rotate(-1deg)}} @keyframes blink{50%{opacity:.2}}
+  .tb{position:fixed;bottom:calc(18px + env(safe-area-inset-bottom));width:72px;height:72px;border-radius:50%;border:3px solid #fff8;background:#0007;color:#fff;font-size:28px;display:none;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none}
+  #bl{left:calc(14px + env(safe-area-inset-left))}#bu{left:calc(92px + env(safe-area-inset-left));bottom:calc(70px + env(safe-area-inset-bottom))}#br{left:calc(170px + env(safe-area-inset-left))}
+  #bj{right:calc(18px + env(safe-area-inset-right));width:100px;height:100px;font-size:20px}
+  #bv{right:calc(16px + env(safe-area-inset-right));bottom:auto;top:calc(76px + env(safe-area-inset-top));width:56px;height:56px;font-size:20px}
+  .touch #time small{display:none}
+  .touch.playing .tb{display:block}
+  .touch #hint{bottom:calc(150px + env(safe-area-inset-bottom));font-size:14px;padding:0 12px}
+</style>
+</head>
+<body>
+<div id="hud" class="o"><div class="m">$ <span id="money">0</span></div><div class="b">🍌 × <span id="ban">0</span></div><div class="g">Gold × <span id="gold">0</span></div><div class="a">Axolotls <span id="axo">0</span>/5</div><div class="x">Ouches: <span id="ouch">0</span></div></div>
+<div id="time" class="o"><span id="t">0.0s</span><small>V = change view</small></div>
+<div id="bar"><div id="fill"></div><span id="crown">👑</span><span id="castle">🏰</span></div>
+<div id="overlay" class="o"></div>
+<div id="hint" class="o"></div>
+<button class="tb" id="bl">◀</button><button class="tb" id="bu">▲</button><button class="tb" id="br">▶</button><button class="tb" id="bv">👁</button><button class="tb" id="bj">JUMP</button>
+<script src="lib/three.min.js"></script>
+<script>
+"use strict";
+if(!window.THREE){ document.getElementById('overlay').innerHTML = '<p>The 3D engine could not load.<br>Keep the lib folder next to index.html.</p>'; throw new Error('three.js missing'); }
+
+// ====== Ashton: change these names if you want! ======
+const BANANA_NAME = 'BANANA BOB';   // the banana buddy with the lips
+const RICH_NAME = 'MR. RICH';       // he is green because he is SO rich
+const BANANA_SAYS = 'POOP!';
+// =====================================================
+
+const $ = id => document.getElementById(id);
+const rnd = (a,b) => a + Math.random()*(b-a);
+const SPEED = 7.5, GRAV = 28, JUMP = 11.5, JUMP2 = 10.5, HW = 0.32, HT = 1.8, C = 303, GOAL_D = C + 17;
+
+// ---------- renderer / scene ----------
+const renderer = new THREE.WebGLRenderer({antialias:true});
+renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputEncoding = THREE.sRGBEncoding;
+document.body.insertBefore(renderer.domElement, document.body.firstChild);
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xd58ee6, 55, 260);
+const camera = new THREE.PerspectiveCamera(65, innerWidth/innerHeight, 0.1, 2500);
+addEventListener('resize', () => { renderer.setSize(innerWidth, innerHeight); camera.aspect = innerWidth/innerHeight; camera.updateProjectionMatrix(); });
+
+function canvasTex(w, h, draw){
+  const c = document.createElement('canvas'); c.width = w; c.height = h; draw(c.getContext('2d'), w, h);
+  const t = new THREE.CanvasTexture(c); t.encoding = THREE.sRGBEncoding; return t;
+}
+scene.background = canvasTex(4, 512, (c,w,h) => { const g = c.createLinearGradient(0,0,0,h);
+  g.addColorStop(0,'#1a1260'); g.addColorStop(.45,'#6a35c8'); g.addColorStop(.8,'#e88fd8'); g.addColorStop(1,'#ffc79a'); c.fillStyle = g; c.fillRect(0,0,w,h); });
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8a5fd0, 0.8));
+const sunLight = new THREE.DirectionalLight(0xe9ffdc, 0.85);
+sunLight.castShadow = true; sunLight.shadow.mapSize.set(2048, 2048);
+Object.assign(sunLight.shadow.camera, {left:-32, right:32, top:32, bottom:-32, near:1, far:110});
+sunLight.shadow.bias = -0.0005;
+scene.add(sunLight, sunLight.target);
+
+// ---------- textures / materials / geometry ----------
+const tileTex = canvasTex(128, 128, c => { c.fillStyle = '#7448c4'; c.fillRect(0,0,128,128); c.fillStyle = '#8659da'; c.fillRect(0,0,64,64); c.fillRect(64,64,64,64);
+  c.strokeStyle = '#55309c'; c.lineWidth = 4; c.strokeRect(0,0,64,64); c.strokeRect(64,64,64,64); c.strokeRect(64,0,64,64); c.strokeRect(0,64,64,64); });
+const brickTex = canvasTex(128, 128, c => { c.fillStyle = '#4a2a86'; c.fillRect(0,0,128,128); c.strokeStyle = '#35195f'; c.lineWidth = 5;
+  for(let y=0;y<4;y++){ c.beginPath(); c.moveTo(0,y*32); c.lineTo(128,y*32); c.stroke(); for(let x=0;x<3;x++){ c.beginPath(); c.moveTo(x*64+(y%2)*32,y*32); c.lineTo(x*64+(y%2)*32,y*32+32); c.stroke(); } } });
+const moneyWallTex = canvasTex(128, 128, c => { c.fillStyle = '#1f9a4c'; c.fillRect(0,0,128,128); c.textAlign = 'center'; c.textBaseline = 'middle'; c.font = '900 34px system-ui';
+  for(let y=0;y<2;y++) for(let x=0;x<2;x++){ c.strokeStyle = '#0d5e2b'; c.lineWidth = 6; c.strokeRect(x*64+3,y*64+3,58,58); c.strokeStyle = '#c9ffd6'; c.lineWidth = 2; c.strokeRect(x*64+9,y*64+9,46,46); c.fillStyle = '#d6ffe0'; c.fillText('$', x*64+32, y*64+34); } });
+for(const t of [tileTex, brickTex, moneyWallTex]){ t.wrapS = t.wrapT = THREE.RepeatWrapping; }
+const dollarTex = (bg, edge, fg, out) => canvasTex(128, 128, c => { c.fillStyle = bg; c.fillRect(0,0,128,128); c.strokeStyle = edge; c.lineWidth = 12; c.strokeRect(6,6,116,116);
+  c.fillStyle = fg; c.font = '900 92px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineWidth = 8; c.strokeStyle = out; c.strokeText('$',64,70); c.fillText('$',64,70); });
+const moneyBlockTex = dollarTex('#22a24f', '#0d5e2b', '#d6ffe0', '#0b4a22'), bonusTex = dollarTex('#ffc928', '#b8860b', '#1f9a4c', '#fff6c2');
+// blocky pixel stone (with crystal and gold specks), banana blocks, gold blocks, silver blocks
+function pixelTex(draw){ const t = canvasTex(16, 16, draw); t.magFilter = THREE.NearestFilter; t.wrapS = t.wrapT = THREE.RepeatWrapping; return t; }
+const stonePix = (c, speck) => {
+  for(let y=0;y<16;y++) for(let x=0;x<16;x++){ const v = 112 + (Math.random()*4|0)*13 - (Math.random() < .1 ? 26 : 0); c.fillStyle = 'rgb(' + v + ',' + v + ',' + (v+5) + ')'; c.fillRect(x,y,1,1); }
+  c.fillStyle = '#5d5d66'; for(let i=0;i<5;i++){ let x = Math.random()*16|0, y = Math.random()*16|0; for(let k=0;k<3;k++){ c.fillRect(x,y,1,1); x += Math.random() < .5 ? 1 : 0; y += 1; } }
+  if(speck) for(let i=0;i<4;i++){ const x = 2 + (Math.random()*11|0), y = 2 + (Math.random()*11|0); c.fillStyle = speck[0]; c.fillRect(x,y,2,2); c.fillStyle = speck[1]; c.fillRect(x,y,1,1); }
+};
+const stoneTex = pixelTex(c => stonePix(c)), crystalOreTex = pixelTex(c => stonePix(c, ['#3fd8f0', '#c9fbff'])), goldOreTex = pixelTex(c => stonePix(c, ['#f0b400', '#fff2a0']));
+const shinyTex = (hi, mid, lo, line) => canvasTex(64, 64, c => { const g = c.createLinearGradient(0,0,64,64); g.addColorStop(0,hi); g.addColorStop(.5,mid); g.addColorStop(1,lo); c.fillStyle = g; c.fillRect(0,0,64,64);
+  c.fillStyle = 'rgba(255,255,255,.55)'; c.fillRect(0,0,64,4); c.fillRect(0,0,4,64); c.fillStyle = 'rgba(0,0,0,.25)'; c.fillRect(0,60,64,4); c.fillRect(60,0,4,64);
+  c.strokeStyle = line; c.lineWidth = 2; c.strokeRect(9,9,46,46); c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 3; c.beginPath(); c.moveTo(14,30); c.lineTo(30,14); c.moveTo(16,40); c.lineTo(40,16); c.stroke(); });
+const goldBlockTex = shinyTex('#fff3a8', '#ffc928', '#d08a00', '#b8860b'), silverBlockTex = shinyTex('#ffffff', '#cfd6e2', '#8d97a8', '#7a8494');
+const bananaBlockTex = canvasTex(128, 128, c => { c.fillStyle = '#ffd83a'; c.fillRect(0,0,128,128); c.strokeStyle = '#b8860b'; c.lineWidth = 12; c.strokeRect(6,6,116,116);
+  c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(12,12,104,8);
+  c.lineJoin = 'round'; c.lineWidth = 6; c.strokeStyle = '#7a5200'; c.fillStyle = '#fff27a';
+  c.beginPath(); c.moveTo(26,44); c.quadraticCurveTo(64,118,104,44); c.quadraticCurveTo(64,84,26,44); c.closePath(); c.fill(); c.stroke();
+  c.fillStyle = '#5a3a00'; c.fillRect(20,38,10,10); c.fillRect(100,38,9,9); });
+const billTex = canvasTex(256, 128, c => { c.fillStyle = '#1f9a4c'; c.fillRect(0,0,256,128); c.strokeStyle = '#d6ffe0'; c.lineWidth = 8; c.strokeRect(12,12,232,104);
+  c.fillStyle = '#d6ffe0'; c.beginPath(); c.ellipse(128,64,44,40,0,0,7); c.fill(); c.fillStyle = '#157a3a'; c.font = '900 72px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('$',128,68);
+  c.fillStyle = '#d6ffe0'; c.font = '900 30px system-ui'; c.fillText('10',40,40); c.fillText('10',216,92); });
+const glowTex = canvasTex(128, 128, c => { const g = c.createRadialGradient(64,64,0,64,64,64); g.addColorStop(0,'rgba(255,255,255,1)'); g.addColorStop(.3,'rgba(255,255,255,.45)'); g.addColorStop(1,'rgba(255,255,255,0)'); c.fillStyle = g; c.fillRect(0,0,128,128); });
+const bubbleTex = canvasTex(320, 200, c => { c.fillStyle = '#fff'; c.strokeStyle = '#1b1033'; c.lineWidth = 10; c.lineJoin = 'round';
+  c.beginPath(); c.moveTo(60,150); c.lineTo(30,192); c.lineTo(110,150); c.closePath(); c.stroke(); c.fill();
+  c.beginPath(); c.ellipse(160,84,146,72,0,0,7); c.stroke(); c.fill(); c.beginPath(); c.moveTo(64,146); c.lineTo(36,186); c.lineTo(108,148); c.fill();
+  c.fillStyle = '#6b3d12'; c.font = '900 ' + Math.min(76, 520/BANANA_SAYS.length) + 'px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(BANANA_SAYS,160,88); });
+
+const L = (color, o) => new THREE.MeshLambertMaterial(Object.assign({color}, o));
+const M = {
+  top: L(0xffffff, {map:tileTex}), side: L(0xffffff, {map:brickTex}), rock: L(0x3a1f6e, {flatShading:true}),
+  gold: new THREE.MeshPhongMaterial({color:0xffc928, specular:0xffffff, shininess:90, emissive:0x3d2800}),
+  goldD: new THREE.MeshPhongMaterial({color:0xffc928, specular:0xffffff, shininess:90, emissive:0x3d2800, side:THREE.DoubleSide}),
+  stoneSpike: L(0xffffff, {map:stoneTex, flatShading:true}), grass: L(0xc3d93a, {emissive:0x2a3300}), stonePlate: L(0x4b4f63), grassPlate: L(0x4f8a1f),
+  purple: L(0x7b3fe4), red: L(0xe0303a), redD: L(0xe0303a, {side:THREE.DoubleSide}), white: L(0xffffff), skin: L(0xffe6cc), dark: L(0x2a2140),
+  blue: L(0x2468e0), pink: L(0xe8308c), lips: L(0xe0203a),
+  banana: L(0xffe14d, {emissive:0x4a3c00}), carpet: L(0xc8202c), stone: L(0xcfc8ea), stoneD: L(0xa79fd0),
+  used: L(0x8a7a55), bonus: L(0xffffff, {map:bonusTex}), moneyBlock: L(0xffffff, {map:moneyBlockTex}), pad: L(0xff5a8a),
+  house: L(0xffffff, {map:moneyWallTex, transparent:true}), houseRoof: L(0x157a3a, {transparent:true}),
+  cloud: L(0xcfe6ff, {emissive:0x1c4a8a}), carBody: L(0xe0303a), glass: L(0x9fdcff, {emissive:0x1c4a8a}), tire: L(0x1b1b22),
+  richSkin: L(0x5fe07a), suit: L(0x157a3a), hat: L(0x15131c),
+  bill: new THREE.MeshBasicMaterial({map:billTex, side:THREE.DoubleSide}),
+  stoneBlock: L(0xffffff, {map:stoneTex}), crystalOre: L(0xffffff, {map:crystalOreTex, emissive:0x062a33}), goldOre: L(0xffffff, {map:goldOreTex}),
+  bananaBlock: L(0xffffff, {map:bananaBlockTex}),
+  goldBlock: new THREE.MeshPhongMaterial({map:goldBlockTex, specular:0xffffff, shininess:70, emissive:0x2a1a00}),
+  silverBlock: new THREE.MeshPhongMaterial({map:silverBlockTex, specular:0xffffff, shininess:90}),
+  silver: new THREE.MeshPhongMaterial({color:0xdfe6f0, specular:0xffffff, shininess:110, emissive:0x22262e}),
+  crystals: [0x6ff3ff, 0xff7ae6, 0xb48cff].map((c,i) => new THREE.MeshPhongMaterial({color:c, emissive:[0x1a8fb0, 0x8a1a7a, 0x4a2aa0][i], specular:0xffffff, shininess:120, flatShading:true, transparent:true, opacity:.9})),
+  laser: new THREE.MeshBasicMaterial({color:0xff3b3b}), laserGlow: new THREE.MeshBasicMaterial({color:0xff2020, transparent:true, opacity:.35, blending:THREE.AdditiveBlending, depthWrite:false}),
+  emitter: L(0x2a2140), lens: new THREE.MeshBasicMaterial({color:0xff5050}),
+  water: L(0x3fb6ff, {emissive:0x0a3a6a, transparent:true, opacity:.8}),
+  axo: L(0xffb3d1), axoGill: L(0xe8307a), axoDark: L(0x3a1030),
+  bulb: new THREE.MeshBasicMaterial({color:0xfff6b0}),
+  blob: new THREE.MeshBasicMaterial({color:0x000000, transparent:true, opacity:.38, depthWrite:false}),
+};
+function boxGeo(w, h, d, tile){ // box with world-scaled UVs so textures tile
+  const g = new THREE.BoxGeometry(w,h,d), uv = g.attributes.uv, dims = [[d,h],[d,h],[w,d],[w,d],[w,h],[w,h]];
+  for(let f=0;f<6;f++) for(let i=0;i<4;i++){ const k = f*4+i; uv.setXY(k, uv.getX(k)*dims[f][0]/tile, uv.getY(k)*dims[f][1]/tile); }
+  return g;
+}
+function bananaGeo(){ // a tapered crescent
+  const R = .36, arc = 2.1, g = new THREE.TorusGeometry(R, .1, 8, 16, arc), pos = g.attributes.position;
+  for(let i=0;i<pos.count;i++){
+    const x = pos.getX(i), y = pos.getY(i), z = pos.getZ(i), u = Math.atan2(y,x), t = Math.max(0, Math.min(1, u/arc));
+    const f = .3 + .7*Math.pow(Math.sin(Math.PI*t), .6), cx = R*Math.cos(u), cy = R*Math.sin(u);
+    pos.setXYZ(i, cx+(x-cx)*f, cy+(y-cy)*f, z*f);
+  }
+  g.computeVertexNormals(); g.center(); return g;
+}
+const BAN_UP = -1.05; // rotation.z that stands a banana upright
+const G = {
+  rock: new THREE.ConeGeometry(1,1,6), stoneSpike: new THREE.ConeGeometry(.4,1.05,6), blade: new THREE.ConeGeometry(.15,1.3,5), bigSpike: new THREE.ConeGeometry(.5,1.9,6),
+  banana: bananaGeo(), bill: new THREE.PlaneGeometry(.9,.45), cash: new THREE.PlaneGeometry(1.25,.62), blob: new THREE.CircleGeometry(.5,20),
+  robe: new THREE.CylinderGeometry(.24,.42,.72,14), hem: new THREE.TorusGeometry(.42,.07,8,18), belt: new THREE.TorusGeometry(.33,.045,8,18),
+  collar: new THREE.TorusGeometry(.25,.07,8,16), leg: new THREE.BoxGeometry(.15,.44,.17), shoe: new THREE.BoxGeometry(.17,.1,.3),
+  arm: new THREE.CylinderGeometry(.075,.085,.42,8), hand: new THREE.SphereGeometry(.09,8,8), head: new THREE.SphereGeometry(.32,20,16),
+  ball: new THREE.SphereGeometry(.05,10,8), eyeBar: new THREE.BoxGeometry(.15,.04,.03), smile: new THREE.TorusGeometry(.15,.04,8,16,Math.PI*.8),
+  crown: new THREE.CylinderGeometry(.29,.25,.16,14,1,true), point: new THREE.ConeGeometry(.075,.3,4),
+  cape: new THREE.PlaneGeometry(.8,1.05).translate(0,-.525,0), part: new THREE.BoxGeometry(.14,.14,.14),
+  crystal: new THREE.OctahedronGeometry(.35, 0), cube: new THREE.BoxGeometry(1,1,1),
+  goldBar: new THREE.CylinderGeometry(.15,.23,.16,4).rotateY(Math.PI/4).scale(1.8,1,1), coin: new THREE.CylinderGeometry(.22,.22,.05,18).rotateX(Math.PI/2),
+  beamCore: new THREE.CylinderGeometry(.045,.045,1,6), beamGlow: new THREE.CylinderGeometry(.16,.16,1,10),
+  cloud: new THREE.SphereGeometry(1,12,10), wheel: new THREE.CylinderGeometry(.28,.28,.2,12), pyramid: new THREE.ConeGeometry(Math.SQRT2,1,4).rotateY(Math.PI/4),
+};
+
+// ---------- the king (drawn like Ashton's: big round head, pink eye, blue "<" eye, pink smile, spiky crown) ----------
+function buildKing(o){
+  o = o || {}; const mono = o.mono, m = x => mono || x, g = new THREE.Group();
+  const add = (geo, mat, x, y, z, parent) => { const me = new THREE.Mesh(geo, mat); me.position.set(x,y,z); me.castShadow = true; (parent || g).add(me); return me; };
+  const robe = m(o.robe || M.purple);
+  const legL = new THREE.Group(), legR = new THREE.Group(), armL = new THREE.Group(), armR = new THREE.Group(), cape = new THREE.Group();
+  legL.position.set(-.14,.5,0); legR.position.set(.14,.5,0); armL.position.set(-.34,1.15,0); armR.position.set(.34,1.15,0); cape.position.set(0,1.24,.2);
+  g.add(legL, legR, armL, armR, cape);
+  for(const l of [legL, legR]){ add(G.leg, m(M.dark), 0,-.22,0, l); add(G.shoe, m(M.gold), 0,-.45,-.06, l); }
+  for(const a of [armL, armR]){ add(G.arm, robe, 0,-.2,0, a); add(G.hand, m(M.skin), 0,-.44,0, a); }
+  add(G.robe, robe, 0,.86,0);
+  add(G.hem, m(M.white), 0,.5,0).rotation.x = Math.PI/2;
+  add(G.belt, m(M.gold), 0,.86,0).rotation.x = Math.PI/2;
+  add(G.collar, m(M.white), 0,1.24,0).rotation.x = Math.PI/2;
+  add(G.head, m(M.skin), 0,1.54,0);
+  add(G.ball, m(M.pink), -.12,1.63,-.285).scale.set(1,1.7,.6);                       // pink eye
+  add(G.eyeBar, m(M.blue), .12,1.665,-.29).rotation.z = -.55; add(G.eyeBar, m(M.blue), .12,1.6,-.29).rotation.z = .55; // blue "<" eye
+  const sm = add(G.smile, m(M.pink), 0,1.53,-.275); sm.rotation.z = -Math.PI/2 - Math.PI*.4; sm.rotation.x = .15;
+  add(G.ball, m(M.pink), 0,1.4,-.285).scale.set(2.2,.9,.7);                          // lip
+  add(G.crown, m(M.goldD), 0,1.87,0);
+  for(let i=0;i<6;i++){ const a = i/6*Math.PI*2; add(G.point, m(M.gold), Math.sin(a)*.27, 2.08, Math.cos(a)*.27); }
+  add(G.cape, m(o.cape || M.redD), 0,0,0, cape); cape.rotation.x = -.2;
+  return {g, legL, legR, armL, armR, cape};
+}
+function animKing(k, phase, moveAmt, air, t){
+  const s = Math.sin(phase) * moveAmt;
+  if(air){ k.legL.rotation.x = .7; k.legR.rotation.x = -.5; k.armL.rotation.set(0,0,-2.5); k.armR.rotation.set(0,0,2.5); k.cape.rotation.x = -1.1 + Math.sin(t*14)*.12; }
+  else { k.legL.rotation.x = s*.95; k.legR.rotation.x = -s*.95; k.armL.rotation.set(-s*.9,0,0); k.armR.rotation.set(s*.9,0,0); k.cape.rotation.x = -.2 - moveAmt*.75 + Math.sin(t*12)*.08*(.3+moveAmt); }
+}
+const king = buildKing(); scene.add(king.g);
+const son = buildKing(); son.g.scale.setScalar(.6); scene.add(son.g);   // the king's son: looks the same, just smaller
+const blob = new THREE.Mesh(G.blob, M.blob); blob.rotation.x = -Math.PI/2; scene.add(blob);
+
+// ---------- world state ----------
+const solids = [], movers = [], hazards = [], blocks = [], cashes = [], pads = [], chands = [], checkpoints = [], miniKings = [], spinners = [], npcs = [], richGuys = [], skyClouds = [], axos = [], occluders = [];
+let items = [], parts = [], floats = [], hist = [], trail = [], sonS = null, jackpot = null;
+const pools = {bill:[], banana:[], gold:[], silver:[]};
+
+function label(str, color, w){
+  const t = canvasTex(512, 128, c => { c.font = '900 ' + Math.min(92, 880/str.length) + 'px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round'; c.lineWidth = 16; c.strokeStyle = '#1b1033'; c.strokeText(str,256,68); c.fillStyle = color; c.fillText(str,256,68); });
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({map:t, transparent:true, fog:false})); s.scale.set(w, w/4, 1); return s;
+}
+function P(x, top, d, w, len, o){ // platform: top surface at `top`, from distance d to d+len
+  o = o || {};
+  const g = new THREE.Group(); g.position.set(x, top, -(d+len/2));
+  const m = new THREE.Mesh(boxGeo(w,1,len,2), [M.side,M.side,M.top,M.side,M.side,M.side]); m.position.y = -.5; m.receiveShadow = true; m.castShadow = true; g.add(m);
+  const rim = new THREE.Mesh(new THREE.BoxGeometry(w+.3,.22,len+.3), M.gold); rim.position.y = -.32; g.add(rim);
+  const rock = new THREE.Mesh(G.rock, M.rock), rh = Math.min(7, 2 + Math.max(w,len)*.28); rock.scale.set(w/2*.95, rh, len/2*.95); rock.rotation.x = Math.PI; rock.position.y = -1 - rh/2; g.add(rock);
+  if(w >= 6){ const c = new THREE.Mesh(new THREE.BoxGeometry(1.9,.04,len), M.carpet); c.position.y = .02; c.receiveShadow = true; g.add(c); }
+  scene.add(g);
+  const s = {x0:x-w/2, x1:x+w/2, y0:top-1, y1:top, z0:-(d+len), z1:-d, g, ox:0, oy:0, oz:0, move:o.move};
+  solids.push(s); if(o.move) movers.push(s); return s;
+}
+function S(x0, x1, y0, y1, d0, d1, mat, deco){ // plain solid box (deco = just looks, not solid)
+  const m = new THREE.Mesh(boxGeo(x1-x0, y1-y0, d1-d0, 2), mat); m.position.set((x0+x1)/2, (y0+y1)/2, -(d0+d1)/2); m.castShadow = true; m.receiveShadow = true; scene.add(m);
+  const s = {x0, x1, y0, y1, z0:-d1, z1:-d0, mesh:m};
+  if(!deco) solids.push(s);
+  return s;
+}
+function MB(x, top, d, s, mat){ // a block you parkour on: money, banana, gold or silver
+  mat = mat || M.moneyBlock;
+  const m = new THREE.Mesh(new THREE.BoxGeometry(s,s,s), mat); m.position.set(x, top-s/2, -(d+s/2)); m.castShadow = true; m.receiveShadow = true; scene.add(m);
+  for(let i=1;i<=2;i++){ const e = new THREE.Mesh(new THREE.BoxGeometry(s*.8,s*.8,s*.8), mat); e.position.set(x + (i%2?.5:-.4), top - s*.9 - i*s*.75, -(d+s/2) + (i%2?-.3:.4)); e.rotation.y = i*.5; scene.add(e); }
+  solids.push({x0:x-s/2, x1:x+s/2, y0:top-s, y1:top, z0:-(d+s), z1:-d});
+}
+function spikes(x, top, d, width, rows, kind){
+  const g = new THREE.Group(), grass = kind === 'grass', n = Math.max(1, Math.round(width/.85)), sp = width/n, dep = rows*.85;
+  for(let r=0;r<rows;r++) for(let i=0;i<n;i++){
+    const cx = (i+.5)*sp - width/2, cz = (r-(rows-1)/2)*.85;
+    if(grass) for(let b=0;b<3;b++){ const c = new THREE.Mesh(G.blade, M.grass), h = rnd(.75,1.1); c.scale.set(1,h,1); c.position.set(cx + (b-1)*.24 + rnd(-.05,.05), .65*h, cz + rnd(-.2,.2)); c.rotation.set(rnd(-.18,.18), 0, rnd(-.22,.22)); g.add(c); }
+    else { const c = new THREE.Mesh(G.stoneSpike, M.stoneSpike), h = rnd(.85,1.1); c.scale.set(1,h,1); c.position.set(cx, .52*h, cz); c.rotation.y = rnd(0,3); c.castShadow = true; g.add(c); }
+  }
+  const plate = new THREE.Mesh(new THREE.BoxGeometry(width, .1, dep), grass ? M.grassPlate : M.stonePlate); plate.position.y = .05; g.add(plate);
+  g.position.set(x, top, -d); scene.add(g);
+  hazards.push({x0:x-width/2+.14, x1:x+width/2-.14, y0:top, y1:top+.8, z0:-d-dep/2+.14, z1:-d+dep/2-.14});
+}
+function car(top, d, w, ph){ // a car that keeps crashing into the big stone spikes
+  const sx = w/2 - .6, amp = sx - .5 - 1.15, g = new THREE.Group();
+  for(const s of [-sx, sx]){ const m = new THREE.Mesh(G.bigSpike, M.stoneSpike); m.position.set(s, top+.95, -d); m.castShadow = true; scene.add(m); hazards.push({x0:s-.3, x1:s+.3, y0:top, y1:top+1.4, z0:-d-.3, z1:-d+.3}); }
+  const add = (geo, mat, x, y, z) => { const m = new THREE.Mesh(geo, mat); m.position.set(x,y,z); m.castShadow = true; g.add(m); return m; };
+  add(new THREE.BoxGeometry(2.2,.5,1.1), M.carBody, 0,.55,0); add(new THREE.BoxGeometry(1.1,.45,.95), M.glass, -.15,1.0,0);
+  for(const wx of [-.7,.7]) for(const wz of [-.55,.55]) add(G.wheel, M.tire, wx,.28,wz).rotation.x = Math.PI/2;
+  for(const wz of [-.35,.35]) add(G.ball, M.bulb, 1.1,.6,wz).scale.setScalar(2.2);
+  g.position.set(0, top, -d); scene.add(g);
+  hazards.push({car:true, g, top, sx, amp, ph, dir:1, hop:0, x0:-1, x1:1, y0:top, y1:top+1.05, z0:-d-.5, z1:-d+.5, z:-d});
+}
+function block(x, top, d){ // bonus block: bonk it from below
+  const y = top + 3.0, m = new THREE.Mesh(new THREE.BoxGeometry(1.2,1.2,1.2), M.bonus); m.position.set(x, y+.6, -d); m.castShadow = true; scene.add(m);
+  const s = {x0:x-.6, x1:x+.6, y0:y, y1:y+1.2, z0:-d-.6, z1:-d+.6, block:true, used:false, bump:0, mesh:m, by:y+.6};
+  solids.push(s); blocks.push(s); occluders.push(s);
+}
+function cash(x, y, d){
+  const g = new THREE.Group(), m = new THREE.Mesh(G.cash, M.bill); g.add(m);
+  const gl = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0xfff07a, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:.55})); gl.scale.set(2.2,2.2,1); g.add(gl);
+  g.position.set(x, y, -d); scene.add(g);
+  cashes.push({kind:'cash', x, y, z:-d, g, m, taken:false, ph:cashes.length});
+}
+function cashArc(x, top, d0, d1, n, hMax){ for(let i=0;i<n;i++){ const t = n === 1 ? .5 : i/(n-1); cash(x, top + 1.5 + (hMax-1.5)*4*t*(1-t), d0 + (d1-d0)*t); } }
+function hang(x, y, d){ // a banana hanging on a string from the sky
+  const g = new THREE.Group(), m = new THREE.Mesh(G.banana, M.banana); m.scale.setScalar(1.6); m.rotation.z = BAN_UP; g.add(m);
+  const st = new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,50,4), M.white); st.position.y = 25.5; g.add(st);
+  g.position.set(x, y, -d); scene.add(g);
+  cashes.push({kind:'banana', x, y, z:-d, g, m, taken:false, ph:cashes.length});
+}
+function bounce(x, top, d){
+  const g = new THREE.Group(), base = new THREE.Mesh(new THREE.CylinderGeometry(1.15,1.25,.3,20), M.pad); base.position.y = .15; g.add(base);
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(.85,.09,8,24), M.gold); ring.rotation.x = Math.PI/2; ring.position.y = .32; g.add(ring);
+  for(let i=0;i<6;i++){ const b = new THREE.Mesh(G.banana, M.banana), a = i/6*Math.PI*2; b.position.set(Math.cos(a)*.75, .42, Math.sin(a)*.75); b.rotation.set(Math.PI/2, 0, a); b.scale.setScalar(1.3); g.add(b); }
+  g.position.set(x, top, -d); scene.add(g);
+  pads.push({x, top, z:-d, g, squash:0});
+}
+function chandelier(x, top, d){
+  const y = top + 7.2, root = new THREE.Group(), sw = new THREE.Group(); root.position.set(x, y+8, -d); root.add(sw); scene.add(root);
+  const chainHi = new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,80,5), M.gold); chainHi.position.y = 40; root.add(chainHi);
+  const chain = new THREE.Mesh(new THREE.CylinderGeometry(.05,.05,6.6,5), M.gold); chain.position.y = -3.3; sw.add(chain);
+  const torus = (r, yy) => { const t = new THREE.Mesh(new THREE.TorusGeometry(r,.09,8,28), M.gold); t.rotation.x = Math.PI/2; t.position.y = yy; sw.add(t); };
+  torus(1.7, -8); torus(1.0, -8.9);
+  const up = new THREE.Vector3(0,1,0), apex = new THREE.Vector3(0,-6.6,0);
+  for(let i=0;i<8;i++){
+    const a = i/8*Math.PI*2, pt = new THREE.Vector3(Math.cos(a)*1.7, -8, Math.sin(a)*1.7), dir = pt.clone().sub(apex), len = dir.length();
+    const arm = new THREE.Mesh(new THREE.CylinderGeometry(.04,.04,len,5), M.gold); arm.position.copy(apex).addScaledVector(dir,.5); arm.quaternion.setFromUnitVectors(up, dir.normalize()); sw.add(arm);
+    const bulb = new THREE.Mesh(G.ball, M.bulb); bulb.scale.setScalar(2.8); bulb.position.set(pt.x, -7.82, pt.z); sw.add(bulb);
+    const b = new THREE.Mesh(G.banana, M.banana), a2 = a + Math.PI/8; b.scale.setScalar(1.6); b.position.set(Math.cos(a2)*1.75, -8.65, Math.sin(a2)*1.75); b.rotation.set(0, -a2, BAN_UP); sw.add(b);
+  }
+  for(let i=0;i<5;i++){ const b = new THREE.Mesh(G.banana, M.banana), a = i/5*Math.PI*2; b.scale.setScalar(1.4); b.position.set(Math.cos(a)*1.0, -9.5, Math.sin(a)*1.0); b.rotation.set(0, -a, BAN_UP); sw.add(b); }
+  const orb = new THREE.Mesh(G.head, M.gold); orb.position.y = -6.6; sw.add(orb);
+  const gl = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0xffe98a, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:.7})); gl.scale.set(8,8,1); gl.position.y = -8.3; sw.add(gl);
+  chands.push({x, y, z:-d, sw, t:rnd(.5,2.5), ph:d});
+}
+function checkpoint(d, top, w){ // a stone king statue that turns to gold
+  const mat = new THREE.MeshPhongMaterial({color:0x8d86a8, specular:0xffffff, shininess:60}), st = buildKing({mono:mat});
+  const x = -(w/2 - .9); st.g.scale.setScalar(1.25); st.g.position.set(x, top+.6, -d-.6); st.g.rotation.y = Math.PI - .5; animKing(st, 0, 0, true, 0); scene.add(st.g);
+  const ped = new THREE.Mesh(new THREE.CylinderGeometry(.6,.7,.6,10), M.stone); ped.position.set(x, top+.3, -d-.6); ped.castShadow = true; scene.add(ped);
+  checkpoints.push({d, top, x:0, mat, reached:false, sx:x});
+}
+function cloud(x, y, d, s){ // the blue stuff
+  const g = new THREE.Group();
+  [[0,0,0,1.2],[1.1,.1,.2,.9],[-1.1,.05,-.1,.95],[.45,.5,0,.8],[-.45,.35,.3,.7]].forEach(a => { const m = new THREE.Mesh(G.cloud, M.cloud); m.position.set(a[0],a[1],a[2]); m.scale.set(a[3],a[3]*.7,a[3]); g.add(m); });
+  g.position.set(x, y, -d); g.scale.setScalar(s); scene.add(g); return g;
+}
+function bananaGuy(x, top, d){ // the banana buddy with lips
+  const g = new THREE.Group(), add = (geo, mat, px, py, pz) => { const m = new THREE.Mesh(geo, mat); m.position.set(px,py,pz); m.castShadow = true; g.add(m); return m; };
+  const body = add(G.banana, M.banana, 0,1.3,0); body.scale.setScalar(3.3); body.rotation.z = BAN_UP;
+  for(const ex of [-.02,.3]){ add(G.ball, M.white, ex,1.62,-.3).scale.setScalar(2.4); add(G.ball, M.dark, ex+.02,1.62,-.4).scale.setScalar(1.1); }
+  add(G.ball, M.lips, .15,1.28,-.33).scale.set(4.2,1.3,1.6); add(G.ball, M.lips, .15,1.17,-.33).scale.set(3.6,1.5,1.6);
+  for(const lx of [-.42,-.1]){ add(G.leg, M.dark, lx,.2,0).scale.set(.8,.9,.8); add(G.shoe, M.blue, lx,.05,-.06); }
+  const bub = new THREE.Sprite(new THREE.SpriteMaterial({map:bubbleTex, transparent:true, fog:false, depthTest:false})); bub.position.set(-1.5,3.3,0); bub.renderOrder = 9; g.add(bub);
+  const name = label(BANANA_NAME, '#ffe14d', 3.2); name.position.set(0,2.75,0); g.add(name);
+  g.position.set(x, top, -d); g.rotation.y = Math.PI; scene.add(g);
+  npcs.push({g, bub, x, top, z:-d, near:false, pop:0, ph:d});
+}
+function richGuy(x, y, d, dir){ // green because he is rich. rides a cloud, throws money
+  const g = new THREE.Group(), add = (geo, mat, px, py, pz, par) => { const m = new THREE.Mesh(geo, mat); m.position.set(px,py,pz); m.castShadow = true; (par || g).add(m); return m; };
+  const cl = cloud(0,-.5,0,1.5); scene.remove(cl); g.add(cl);
+  for(const lx of [-.14,.14]) add(G.leg, M.suit, lx,.3,0);
+  add(G.robe, M.suit, 0,.95,0).scale.set(.9,1.1,.9); add(G.belt, M.gold, 0,.9,0).rotation.x = Math.PI/2;
+  add(G.head, M.richSkin, 0,1.7,0);
+  for(const ex of [-.11,.11]){ add(G.ball, M.white, ex,1.78,-.28).scale.setScalar(1.6); add(G.ball, M.dark, ex,1.78,-.34).scale.setScalar(.8); }
+  const sm = add(G.smile, M.suit, 0,1.68,-.27); sm.rotation.z = -Math.PI/2 - Math.PI*.4;
+  add(new THREE.CylinderGeometry(.4,.4,.05,16), M.hat, 0,2.0,0); add(new THREE.CylinderGeometry(.25,.25,.45,16), M.hat, 0,2.25,0); add(new THREE.CylinderGeometry(.26,.26,.1,16), M.gold, 0,2.08,0);
+  const armL = new THREE.Group(), armR = new THREE.Group(); armL.position.set(-.34,1.3,0); armR.position.set(.34,1.3,0); g.add(armL, armR);
+  for(const a of [armL, armR]){ add(G.arm, M.suit, 0,-.2,0, a); add(G.hand, M.richSkin, 0,-.44,0, a); const b = add(G.bill, M.bill, 0,-.6,0, a); b.scale.setScalar(.8); }
+  armL.rotation.z = -2.2; armR.rotation.z = 2.2;
+  const name = label(RICH_NAME, '#7dff8a', 3.2); name.position.set(0,3.0,0); g.add(name);
+  g.position.set(x, y, -d); g.rotation.y = -dir*Math.PI*.75; scene.add(g);
+  richGuys.push({g, x, y, z:-d, dir, t:1, armR, ph:d});
+}
+function moneyHouse(top, dc){ // a house made of money: run through the door for a jackpot
+  const W = 2.6, t = .4, d0 = dc-3, d1 = dc+3, wh = 3.4, dw = 1.1, dh = 2.7, m = M.house;
+  S(-W, -W+t, top, top+wh, d0, d1, m); S(W-t, W, top, top+wh, d0, d1, m);
+  for(const a of [d0, d1-t]){ S(-W+t, -dw, top, top+wh, a, a+t, m); S(dw, W-t, top, top+wh, a, a+t, m); S(-dw, dw, top+dh, top+wh, a, a+t, m); }
+  S(-W-.3, W+.3, top+wh, top+wh+.3, d0-.3, d1+.3, M.houseRoof);
+  const roof = new THREE.Mesh(G.pyramid, M.houseRoof); roof.scale.set(W+.3, 2.2, 3.3); roof.position.set(0, top+wh+.3+1.1, -dc); roof.castShadow = true; scene.add(roof);
+  const orb = new THREE.Mesh(G.head, M.gold); orb.position.set(0, top+wh+2.6, -dc); scene.add(orb);
+  for(const sx of [-dw-.1, dw+.1]){ const f = new THREE.Mesh(new THREE.BoxGeometry(.2,dh,.5), M.gold); f.position.set(sx, top+dh/2, -d0-.2); scene.add(f); }
+  const sign = label('MONEY HOUSE', '#7dff8a', 6.5); sign.position.set(0, top+wh+3.9, -d0); scene.add(sign);
+  const gl = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0x7dff8a, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:.8})); gl.scale.set(5,5,1); gl.position.set(0, top+1.6, -dc); scene.add(gl);
+  jackpot = {x:0, top, z:-dc, d0, d1, taken:false, glow:gl};
+}
+
+function SP(x, top, d, w, len){ // a platform made of blocky stone, with crystal and gold ore underneath
+  const m = new THREE.Mesh(boxGeo(w,1,len,1), M.stoneBlock); m.position.set(x, top-.5, -(d+len/2)); m.castShadow = true; m.receiveShadow = true; scene.add(m);
+  const cells = [];
+  for(let L=1; L<=6; L++){ const hw = w/2 - L*.75, hl = len/2 - L*1.1; if(hw < 1 || hl < 1) break;
+    for(let ix = -Math.floor(hw); ix <= Math.floor(hw)-1; ix++) for(let iz = -Math.floor(hl); iz <= Math.floor(hl)-1; iz++)
+      if(Math.random() < .9 - L*.12) cells.push([x + ix + .5, top - .5 - L, -(d + len/2) + iz + .5]); }
+  const o = new THREE.Object3D();
+  [M.stoneBlock, M.crystalOre, M.goldOre].forEach((mat, k) => {
+    const mine = cells.filter((c,i) => k === 0 ? i % 9 > 1 : i % 9 === k); if(!mine.length) return;
+    const im = new THREE.InstancedMesh(G.cube, mat, mine.length);
+    mine.forEach((c,i) => { o.position.set(c[0], c[1], c[2]); o.updateMatrix(); im.setMatrixAt(i, o.matrix); });
+    im.castShadow = true; scene.add(im);
+  });
+  solids.push({x0:x-w/2, x1:x+w/2, y0:top-1, y1:top, z0:-(d+len), z1:-d});
+}
+function crystals(x, y, z, n, s, tilt){ // a glowing crystal cluster
+  const g = new THREE.Group();
+  for(let i=0;i<n;i++){ const m = new THREE.Mesh(G.crystal, M.crystals[i % 3]), h = rnd(1.8,3.2); m.scale.set(1, h, 1); m.position.set(rnd(-.4,.4), .3*h, rnd(-.4,.4)); m.rotation.set(rnd(-.45,.45), rnd(0,3), rnd(-.45,.45)); m.castShadow = true; g.add(m); }
+  const gl = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0x9ff6ff, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:.5})); gl.scale.set(3.5,3.5,1); gl.position.y = .8; g.add(gl);
+  g.position.set(x, y, z); g.scale.setScalar(s); g.rotation.z = tilt || 0; scene.add(g); return g;
+}
+function gem(x, y, d){ // a crystal you can grab: +$25
+  const g = new THREE.Group(), m = new THREE.Mesh(G.crystal, M.crystals[cashes.length % 3]); m.scale.set(1.1, 1.9, 1.1); g.add(m);
+  const gl = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0xaef8ff, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:.6})); gl.scale.set(2.4,2.4,1); g.add(gl);
+  g.position.set(x, y, -d); scene.add(g);
+  cashes.push({kind:'gem', x, y, z:-d, g, m, taken:false, ph:cashes.length});
+}
+function beam(len){ const g = new THREE.Group(), a = new THREE.Mesh(G.beamCore, M.laser), b = new THREE.Mesh(G.beamGlow, M.laserGlow); a.scale.y = b.scale.y = len; g.add(a, b); return g; }
+function emitter(x, y, z, dir){
+  const e = new THREE.Mesh(new THREE.BoxGeometry(.45,.9,.55), M.emitter); e.position.set(x, y, z); e.castShadow = true; scene.add(e);
+  const l = new THREE.Mesh(G.ball, M.lens); l.scale.setScalar(2.4); l.position.set(x + dir*.24, y+.05, z); scene.add(l);
+}
+function laserLow(top, d, w){ // a laser beam at your ankles: jump over it
+  const b = beam(w-.5); b.rotation.z = Math.PI/2; b.position.set(0, top+.5, -d); scene.add(b);
+  emitter(-w/2+.25, top+.45, -d, 1); emitter(w/2-.25, top+.45, -d, -1);
+  hazards.push({laser:true, x0:-w/2-.5, x1:w/2+.5, y0:top+.36, y1:top+.64, z0:-d-.12, z1:-d+.12});
+}
+function laserGate(top, d, w, ph){ // a wall of lasers, floor to ceiling, that blinks on and off: run through while it is off
+  const beams = new THREE.Group(), n = 9, H = 6;   // beams close enough together that the wall looks as solid as it is
+  for(let i=0;i<n;i++){ const b = beam(H); b.position.set(-w/2 + 1 + i*(w-2)/(n-1), top + H/2, -d); beams.add(b); }
+  scene.add(beams);
+  S(-w/2, -w/2+.6, top, top+H+.6, d-.3, d+.3, M.stoneBlock); S(w/2-.6, w/2, top, top+H+.6, d-.3, d+.3, M.stoneBlock);
+  occluders.push(S(-w/2, w/2, top+H, top+H+.6, d-.3, d+.3, M.stoneBlock)); // solid ceiling: no jumping over the lasers
+  const lights = [-1,1].map(sx => { const l = new THREE.Mesh(G.ball, M.lens.clone()); l.scale.setScalar(3.4); l.position.set(sx*(w/2-.3), top+H+.78, -d); scene.add(l); return l; });
+  hazards.push({gate:true, ph, beams, lights, on:true, u:0, x0:-w/2+.6, x1:w/2-.6, y0:top, y1:top+H, z0:-d-.15, z1:-d+.15});
+}
+function sweeper(top, d, R, w, ph){ // a laser that spins around a stone pillar: jump when it comes (or stand on the pillar!)
+  S(-.4, .4, top, top+1, d-.4, d+.4, M.stoneBlock);
+  const g = new THREE.Group(), b = beam(2*R); b.rotation.z = Math.PI/2; g.add(b);
+  const hub = new THREE.Mesh(new THREE.CylinderGeometry(.55,.55,.3,16), M.emitter); g.add(hub);
+  g.position.set(0, top+.5, -d); scene.add(g);
+  hazards.push({sweep:true, g, cz:-d, R, w, ph, ang:0, y0:top+.36, y1:top+.64, x0:-R, x1:R, z0:-d-R, z1:-d+R});
+}
+function buildAxo(){ // a pink axolotl with frilly gills
+  const g = new THREE.Group(), gills = [];
+  const add = (geo, mat, x, y, z, sx, sy, sz) => { const m = new THREE.Mesh(geo, mat); m.position.set(x,y,z); m.scale.set(sx||1, sy||sx||1, sz||sx||1); m.castShadow = true; g.add(m); return m; };
+  add(G.head, M.axo, 0,.32,.12, 1.0,.72,1.5);
+  add(G.head, M.axo, 0,.5,-.42, 1.3,.95,1.05);
+  add(G.head, M.axo, 0,.36,.72, .32,.62,1.25);
+  for(const sx of [-1,1]){
+    for(const sz of [-.18,.42]) add(G.ball, M.axo, sx*.3,.1,sz, 1.8,2.6,1.8);
+    add(G.ball, M.axoDark, sx*.22,.6,-.74, 1.6);
+    add(G.ball, M.white, sx*.2,.64,-.79, .55);
+    for(let i=0;i<3;i++){ const gl = new THREE.Group(), base = -sx*[1.5,1.05,.6][i]; gl.position.set(sx*.36, .47 + i*.15, -.42); gl.rotation.z = base;
+      const m = new THREE.Mesh(G.ball, M.axoGill); m.scale.set(1.5, 4.4, 1.5); m.position.y = .2; gl.add(m); g.add(gl); gills.push({gl, base}); }
+  }
+  const sm = add(G.smile, M.axoDark, 0,.47,-.77, .55); sm.rotation.z = -Math.PI/2 - Math.PI*.4;
+  return {g, gills};
+}
+function axolotl(x, top, d, pool){ // find all 5!
+  if(pool){
+    const w = new THREE.Mesh(new THREE.CylinderGeometry(1.25,1.25,.08,24), M.water); w.position.set(x, top+.04, -d); scene.add(w);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(1.3,.12,6,24), M.stoneBlock); rim.rotation.x = Math.PI/2; rim.position.set(x, top+.08, -d); scene.add(rim);
+  }
+  const a = buildAxo(); a.g.position.set(x, top, -d); a.g.rotation.y = Math.PI; scene.add(a.g);
+  const gl = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0xff9cc8, blending:THREE.AdditiveBlending, depthWrite:false, transparent:true, opacity:.6})); gl.scale.set(2.6,2.6,1); gl.position.set(x, top+.6, -d); scene.add(gl);
+  axos.push({a, gl, x, top, z:-d, found:false, slot:0, ph:axos.length*1.7});
+}
+
+// ---------- build the course ----------
+(function buildLevel(){
+  checkpoints.push({d:0, top:0, x:0, reached:true});
+  // 1: the royal runway
+  P(0,0,-6,9,28); bananaGuy(3.2,0,3.5); axolotl(-3.2,0,3);
+  block(-.7,0,4.5); block(.7,0,4.5);
+  spikes(0,0,9.5,3,1,'stone'); cashArc(0,0,7.5,11.5,3,2.8);
+  spikes(0,0,16,9,1,'grass'); cashArc(0,0,13.5,18.5,5,3.2); chandelier(0,0,12);
+  hang(-2.6,2.9,20); hang(2.6,2.9,20); cashArc(0,0,22.5,24.5,2,2.2);
+  P(0,0,25,7,12); spikes(0,0,30,7,1,'stone'); cashArc(0,0,28,32,3,3); block(2,0,34.5); chandelier(-1,0,31);
+  P(0,0,40,7,7); checkpoint(41,0,7); hang(1.5,2.8,44);
+  // 2: money block parkour
+  MB(-2,1,50,3); cash(-2,3.4,51.5);
+  MB(2,2,56,3); cash(2,4.4,57.5);
+  MB(-1,3,62,3); cash(-1,5.4,63.5); cash(-1,8.2,63.5); axolotl(-1,3,63.4);
+  P(0,3,68,7,16); checkpoint(69,3,7); richGuy(-7.6,4.4,75,1);
+  spikes(0,3,73,7,1,'grass'); cashArc(0,3,71,75,3,3);
+  spikes(0,3,78,7,2,'stone'); cashArc(0,3,76,80,3,3.2); chandelier(0,3,75.5);
+  bounce(0,3,82); cash(0,9,84.5); cash(0,10.3,86.3); cash(0,10.7,88.2); cash(0,10.2,90);
+  // 3: up high - the crashing cars and the moving platforms
+  P(0,7.5,88,9,12); checkpoint(89,7.5,9);
+  block(-1.3,7.5,93.5); block(0,7.5,93.5); block(1.3,7.5,93.5); car(7.5,97,9,0);
+  P(0,7.5,102.2,3.6,3.6,{move:t => [Math.sin(t*1.1)*2.8, 0, 0]}); cash(0,10.2,104);
+  P(0,7.5,108.2,3.6,3.6,{move:t => [0, 0, -(1.5 + 1.5*Math.sin(t*.9))]}); cash(0,10.4,112); cash(0,10.4,116.5);
+  P(0,7.5,118,9,16); checkpoint(119,7.5,9); bananaGuy(3.4,7.5,120.3);
+  car(7.5,124,9,.5); car(7.5,129.5,9,1.4); block(-2,7.5,126.8); block(2,7.5,126.8); chandelier(0,7.5,126.8);
+  // 4: skinny beams
+  P(-2.2,7.5,137,2.4,9); spikes(-2.2,7.5,141.5,2.4,1,'grass'); cashArc(-2.2,7.5,139.5,143.5,3,3);
+  P(2.2,8,148,2.4,9); spikes(2.2,8,152.5,2.4,1,'stone'); cashArc(2.2,8,150.5,154.5,3,3); axolotl(2.2,8,155.9);
+  P(-1,8.5,159,2.4,9); spikes(-1,8.5,163.5,2.4,1,'grass'); cashArc(-1,8.5,161.5,165.5,3,3);
+  // 5: the money house
+  P(0,8.5,171,10,16); checkpoint(172,8.5,10); moneyHouse(8.5,180); bananaGuy(3.9,8.5,175); axolotl(1.6,8.5,182.2);
+  hang(-3.6,11.3,176); hang(-3.6,11.3,180); hang(-3.6,11.3,184); hang(3.6,11.3,180); hang(3.6,11.3,184);
+  // 6: the spike gauntlet
+  P(0,8.5,190,9,32); richGuy(8.8,10.2,202,-1);
+  spikes(0,8.5,195,9,1,'grass'); cashArc(0,8.5,193,197,3,3);
+  spikes(0,8.5,200.5,9,2,'stone'); cashArc(0,8.5,198.5,202.5,3,3.2); chandelier(0,8.5,198);
+  block(-2,8.5,204); block(0,8.5,204); block(2,8.5,204); car(8.5,206.5,9,.3);
+  spikes(0,8.5,211.5,9,3,'grass'); cashArc(0,8.5,209,214,5,3.4); chandelier(0,8.5,214);
+  car(8.5,217.5,9,1.2);
+  P(0,8.5,225,6,8); checkpoint(226,8.5,6);
+  // 7: banana blocks up to the crystal mine
+  MB(-1.5,9.5,236,2.4,M.bananaBlock); cash(-1.5,11.9,237.2);
+  MB(1.8,10.5,241,2.4,M.bananaBlock); cash(1.8,12.9,242.2);
+  MB(-1.2,11.5,246,2.4,M.bananaBlock); gem(-1.2,14.2,247.2);
+  // 8: the crystal mine: blocky stone, crystals, lasers, and an axolotl pond
+  SP(0,11,251,9,34); checkpoint(252,11,9);
+  for(const [cd, side] of [[255,-1],[258,1],[262,1],[268,-1],[272,-1],[276,1],[281,-1],[283,1]]) crystals(side*4.75, 10.6, -cd, 5, 1.1, -side*.35);
+  axolotl(3,11,255.5,true);
+  laserLow(11,259,9); gem(0,13.6,259);
+  laserGate(11,265,9,0);
+  sweeper(11,274,4.5,1.35,0); gem(0,13.4,274); chandelier(0,11,276);
+  block(-2,11,281.5); block(2,11,281.5); checkpoint(282.5,11,9);
+  // 9: gold and silver blocks up to the castle
+  MB(1.8,12,288,2.4,M.goldBlock); cash(1.8,14.4,289.2);
+  MB(-1.6,12.5,293,2.4,M.silverBlock); gem(-1.6,15,294.2);
+  MB(1.4,13,298,2.4,M.goldBlock); cash(1.4,15.4,299.2);
+  P(0,13,C,16,26); chandelier(0,13,C+10);
+  const add = (geo, mat, x, y, d) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, 13+y, -d); m.castShadow = true; m.receiveShadow = true; scene.add(m); return m; };
+  add(new THREE.BoxGeometry(16,9,1.6), M.stone, 0, 4.5, C+25);
+  for(let i=0;i<7;i++) add(new THREE.BoxGeometry(1.2,1.2,1.6), M.stone, -6.6+i*2.2, 9.6, C+25);
+  for(const sx of [-8,8]){ add(new THREE.CylinderGeometry(2,2,14,14), M.stoneD, sx, 7, C+24.5); add(new THREE.ConeGeometry(2.6,4.5,14), M.red, sx, 16.2, C+24.5); }
+  for(const sx of [-7,7]){ add(new THREE.CylinderGeometry(.9,.9,6,12), M.stoneD, sx, 3, C+1.2); add(new THREE.ConeGeometry(1.3,2.4,12), M.red, sx, 7.2, C+1.2); }
+  add(new THREE.BoxGeometry(2,.7,1.6), M.gold, 0, .35, C+21.5); add(new THREE.BoxGeometry(1.6,.25,1.3), M.red, 0, .8, C+21.4);
+  add(new THREE.BoxGeometry(2,4,.4), M.gold, 0, 2, C+22.4); add(new THREE.BoxGeometry(1.5,3,.1), M.red, 0, 2.2, C+22.15);
+  for(const sx of [-1,1]){ add(new THREE.BoxGeometry(.3,1.3,1.6), M.gold, sx*.95, .9, C+21.5); add(G.head, M.gold, sx*.95, 4.25, C+22.4); }
+  const fin = label('FINISH', '#ffe14d', 9); fin.position.set(0, 13+8.2, -(C+1.2)); scene.add(fin);
+  [0x29b6f6, 0xff7043, 0x66bb6a, 0xec407a, 0xffca28, 0x26c6da].forEach((c,i) => { const k = buildKing({robe:L(c)}); k.g.scale.setScalar(.62); k.g.position.set(i%2 ? 5.2 : -5.2, 13, -(C + 5 + (i>>1)*5)); k.g.rotation.y = i%2 ? Math.PI/2 : -Math.PI/2; scene.add(k.g); miniKings.push({k, ph:i*1.3}); });
+
+  // sky decor: giant bananas, blue clouds, a cloud sea, and giant spikes poking up from below (like the drawing)
+  for(let i=0;i<11;i++){ const b = new THREE.Mesh(G.banana, M.banana); b.scale.setScalar(rnd(10,20)); b.position.set((i%2?1:-1)*rnd(28,50), rnd(2,30), -(8 + i*30)); b.rotation.set(rnd(0,6),rnd(0,6),rnd(0,6)); scene.add(b); spinners.push(b); }
+  const courseY = d => d < 50 ? 0 : d < 88 ? 3 : d < 234 ? 8.5 : d < 250 ? 10.5 : d < 287 ? 11 : 13;
+  for(let i=0;i<31;i++){ const d = -10 + i*11.5 + rnd(-3,3), g = cloud((i%2?1:-1)*rnd(9,24), courseY(d) + rnd(3,13), d, rnd(1.2,2.6)); skyClouds.push({g, bx:g.position.x, ph:i}); }
+  const sea = new THREE.InstancedMesh(G.cloud, L(0xeaf4ff, {emissive:0x40508a}), 260), o = new THREE.Object3D();
+  for(let i=0;i<260;i++){ o.position.set(rnd(-110,110), rnd(-36,-16), rnd(60,-420)); o.scale.set(rnd(8,20), rnd(3,6), rnd(7,14)); o.rotation.set(0,0,0); o.updateMatrix(); sea.setMatrixAt(i, o.matrix); }
+  scene.add(sea);
+  const cone7 = new THREE.ConeGeometry(1,1,7);
+  [[M.grass, 0], [M.stoneSpike, 1]].forEach(([mat, k]) => { const n = 40, im = new THREE.InstancedMesh(cone7, mat, n);
+    for(let i=0;i<n;i++){ const d = -20 + (i*2+k)*(370/(n*2)) + rnd(-3,3), tip = courseY(d) - rnd(2,13), h = tip + 48, r = rnd(2.2,4.6);
+      o.position.set((i%2?1:-1)*rnd(11,46), -48 + h/2, -d); o.scale.set(r,h,r); o.rotation.set(rnd(-.06,.06), rnd(0,3), rnd(-.06,.06)); o.updateMatrix(); im.setMatrixAt(i, o.matrix); }
+    scene.add(im); });
+})();
+
+// ---------- the green sun ----------
+const sun = new THREE.Group(), sunRays = new THREE.Group();
+(function(){
+  const B = c => new THREE.MeshBasicMaterial({color:c, fog:false});
+  sun.add(new THREE.Mesh(new THREE.SphereGeometry(60,32,24), B(0x3df04a)));
+  for(let i=0;i<14;i++){ const a = i/14*Math.PI*2, r = new THREE.Mesh(new THREE.ConeGeometry(9,32,4), B(0x8dff6a)); r.position.set(Math.cos(a)*84, Math.sin(a)*84, 0); r.rotation.z = a - Math.PI/2; sunRays.add(r); }
+  sun.add(sunRays);
+  const halo = new THREE.Sprite(new THREE.SpriteMaterial({map:glowTex, color:0x7dff6a, blending:THREE.AdditiveBlending, depthWrite:false, fog:false, transparent:true, opacity:.8})); halo.scale.set(420,420,1); sun.add(halo);
+  const dk = B(0x0b3d14);
+  for(const sx of [-22,22]){ const l = new THREE.Mesh(new THREE.BoxGeometry(30,18,6), dk); l.position.set(sx,12,53); sun.add(l); }
+  const br = new THREE.Mesh(new THREE.BoxGeometry(18,4,6), dk); br.position.set(0,16,56); sun.add(br);
+  const arc = Math.PI*.7, sm = new THREE.Mesh(new THREE.TorusGeometry(24,3,8,24,arc), dk); sm.position.set(0,-10,54); sm.rotation.z = -Math.PI/2 - arc/2; sun.add(sm);
+  scene.add(sun);
+})();
+
+// ---------- game state ----------
+const keys = {left:false, right:false, fwd:false, back:false};
+const p = {x:0, y:0, z:0, vx:0, vy:0, vz:0, heading:0, ground:null, coyote:0, jumps:0, phase:0, dead:0, bounced:false};
+let state = 'title', T = 0, playT = 0, winT = 0, money = 0, bananas = 0, bonks = 0, cp = 0, jumpBuf = 0, firstPerson = false, golds = 0, axoFound = 0;
+let camX = 0, camY = 0, camSnap = true;
+
+function resetGame(){
+  money = 0; bananas = 0; bonks = 0; cp = 0; playT = 0; winT = 0; golds = 0; axoFound = 0;
+  for(const a of axos){ a.found = false; a.slot = 0; a.gl.visible = true; a.a.g.scale.setScalar(1); a.a.g.position.set(a.x, a.top, a.z); a.a.g.rotation.set(0, Math.PI, 0); }
+  for(const b of blocks){ b.used = false; b.mesh.material = M.bonus; }
+  for(const c of cashes){ c.taken = false; c.g.visible = true; }
+  if(jackpot){ jackpot.taken = false; jackpot.glow.visible = true; }
+  checkpoints.forEach((c,i) => { c.reached = !i; if(c.mat){ c.mat.color.set(0x8d86a8); c.mat.emissive.set(0x000000); } });
+  respawn();
+}
+function respawn(){
+  const c = checkpoints[cp];
+  Object.assign(p, {x:c.x, y:c.top, z:-(c.d+.6), vx:0, vy:0, vz:0, heading:0, ground:null, jumps:0, dead:0, coyote:.1, bounced:false});
+  king.g.rotation.set(0,0,0); camSnap = true; hist = []; trail = []; sonS = {x:p.x, y:p.y, z:p.z+.5, h:0, air:false, ph:0, mv:0};
+}
+resetGame();
+
+// ---------- sound ----------
+let ac = null;
+function beep(f, d, type, vol, slide, delay){
+  try{
+    if(!ac) ac = new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = ac.currentTime + (delay || 0), o = ac.createOscillator(), g = ac.createGain();
+    o.type = type || 'square'; o.frequency.setValueAtTime(f, t0);
+    if(slide) o.frequency.exponentialRampToValueAtTime(slide, t0 + d);
+    g.gain.setValueAtTime(vol || .05, t0); g.gain.exponentialRampToValueAtTime(.001, t0 + d);
+    o.connect(g); g.connect(ac.destination); o.start(t0); o.stop(t0 + d);
+  }catch(e){}
+}
+
+// ---------- input ----------
+function pressJump(){
+  if(state === 'title'){ state = 'play'; resetGame(); beep(520,.15,'square',.05,880); showUI(); return; }
+  if(state === 'win'){ if(winT > 1.5){ state = 'play'; resetGame(); showUI(); } return; }
+  jumpBuf = .13;
+}
+function toggleView(){ firstPerson = !firstPerson; camSnap = true; }
+const keyMap = {arrowleft:'left', a:'left', arrowright:'right', d:'right', arrowup:'fwd', w:'fwd', arrowdown:'back', s:'back'};
+addEventListener('keydown', e => {
+  const k = e.key.toLowerCase();
+  if(keyMap[k]) keys[keyMap[k]] = true;
+  if((k === ' ' || k === 'enter') && !e.repeat) pressJump();
+  if(k === 'v' && !e.repeat) toggleView();
+  if(k === 'r' && !e.repeat && state === 'play') respawn();
+  if(k === ' ' || k.startsWith('arrow')) e.preventDefault();
+});
+addEventListener('keyup', e => {
+  const k = e.key.toLowerCase();
+  if(keyMap[k]) keys[keyMap[k]] = false;
+  if(k === ' ' && p.vy > 5 && !p.bounced) p.vy = 5; // let go early = short hop
+});
+function bindBtn(id, down, up){
+  const b = $(id); b.addEventListener('pointerdown', e => { e.preventDefault(); e.stopPropagation(); down(); });
+  if(up) ['pointerup','pointercancel','pointerleave'].forEach(n => b.addEventListener(n, up));
+}
+bindBtn('bl', () => keys.left = true, () => keys.left = false);
+bindBtn('br', () => keys.right = true, () => keys.right = false);
+bindBtn('bu', () => keys.fwd = true, () => keys.fwd = false);
+bindBtn('bj', pressJump); bindBtn('bv', toggleView);
+const isTouch = () => document.body.classList.contains('touch');
+if(window.matchMedia && matchMedia('(pointer: coarse)').matches) document.body.classList.add('touch');
+addEventListener('touchstart', () => { if(!isTouch()){ document.body.classList.add('touch'); showUI(); } }, {once:true});
+renderer.domElement.addEventListener('pointerdown', () => { if(state !== 'play') pressJump(); });
+
+// ---------- helpers ----------
+function groundBelow(x, y, z){ let best = -1e9; for(const s of solids) if(x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1 && s.y1 <= y+.3 && s.y1 > best) best = s.y1; return best; }
+function landTop(x, z, y0, y1){ for(const s of solids) if(x > s.x0 && x < s.x1 && z > s.z0 && z < s.z1 && s.y1 <= y0 && s.y1 >= y1) return s.y1; return null; }
+const hit = s => p.x+HW > s.x0 && p.x-HW < s.x1 && p.z+HW > s.z0 && p.z-HW < s.z1 && p.y+HT > s.y0 && p.y < s.y1;
+const approach = (v, t, a) => v < t ? Math.min(t, v+a) : Math.max(t, v-a);
+const partMats = [0xffd447, 0x55e07a, 0xffffff, 0xff5a6a, 0xffe14d, 0x6ac8ff, 0xff6ad5].map(c => new THREE.MeshBasicMaterial({color:c}));
+function burst(x, y, z, n, sp, mats){
+  for(let i=0;i<n;i++){
+    const m = new THREE.Mesh(G.part, partMats[mats[i % mats.length]]); m.position.set(x,y,z); m.scale.setScalar(rnd(.8,1.8)); scene.add(m);
+    parts.push({m, vx:rnd(-sp,sp), vy:rnd(sp*.3,sp*1.5), vz:rnd(-sp,sp), life:rnd(.5,1)});
+  }
+}
+const ftCache = {};
+function floatText(str, x, y, z, color){
+  color = color || '#ffe14d'; const key = str + color;
+  const tex = ftCache[key] || (ftCache[key] = canvasTex(384, 96, c => { c.font = '900 ' + Math.min(60, 560/str.length) + 'px system-ui'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.lineJoin = 'round'; c.lineWidth = 12; c.strokeStyle = '#1b1033'; c.strokeText(str,192,50); c.fillStyle = color; c.fillText(str,192,50); }));
+  const s = new THREE.Sprite(new THREE.SpriteMaterial({map:tex, depthTest:false, transparent:true, fog:false})); s.scale.set(4.5,1.12,1); s.position.set(x,y,z); s.renderOrder = 10; scene.add(s);
+  floats.push({s, life:1});
+}
+const ITEM = {bill:{geo:G.bill, mat:M.bill, s:1}, banana:{geo:G.banana, mat:M.banana, s:1.25}, gold:{geo:G.goldBar, mat:M.gold, s:1.15}, silver:{geo:G.coin, mat:M.silver, s:1.3}};
+function spawnItem(type, x, y, z, o){
+  let m = pools[type].pop();
+  if(!m){ m = new THREE.Mesh(ITEM[type].geo, ITEM[type].mat); m.castShadow = type === 'gold'; scene.add(m); }
+  m.visible = true; m.scale.setScalar(ITEM[type].s); m.rotation.set(rnd(0,6), rnd(0,6), rnd(0,6));
+  const it = Object.assign({type, m, x, y, z, vx:0, vz:0, vy: type === 'bill' ? -3 : -rnd(6,8), ph:rnd(0,6), landed:false, life:6}, o);
+  items.push(it); return it;
+}
+function ouch(){
+  if(p.dead > 0) return;
+  p.dead = .75; p.vy = 10; p.vx = 0; p.vz = 4; bonks++;
+  beep(300,.4,'sawtooth',.06,60); burst(p.x, p.y+1, p.z, 16, 5, [3,0,2]); floatText('OUCH!', p.x, p.y+2.6, p.z, '#ff8a8a');
+}
+
+// ---------- update ----------
+function update(dt){
+  T += dt;
+  // moving platforms carry the king
+  for(const s of movers){
+    const v = s.move(T), dx = v[0]-s.ox, dy = v[1]-s.oy, dz = v[2]-s.oz; s.ox = v[0]; s.oy = v[1]; s.oz = v[2];
+    s.x0 += dx; s.x1 += dx; s.y0 += dy; s.y1 += dy; s.z0 += dz; s.z1 += dz; s.g.position.x += dx; s.g.position.y += dy; s.g.position.z += dz;
+    if(p.ground === s){ p.x += dx; p.y += dy; p.z += dz; }
+  }
+  // cars drive back and forth and crash into the big spikes
+  for(const h of hazards) if(h.car){
+    const u = ((T*.55 + h.ph) % 2 + 2) % 2, x = h.amp*(u < 1 ? 2*u-1 : 3-2*u), dir = u < 1 ? 1 : -1;
+    if(dir !== h.dir){ h.dir = dir; h.hop = 1;
+      if(Math.abs(h.z - p.z) < 28 && state === 'play'){ beep(160,.25,'sawtooth',.05,50); beep(900,.08,'square',.03,null,.02); burst(-dir*(h.sx-.6), h.top+1, h.z, 8, 4, [2,0,3]); floatText('CRASH!', -dir*(h.sx-1), h.top+2.6, h.z, '#ffffff'); } }
+    h.hop = Math.max(0, h.hop - dt*2.2); const hp = Math.sin(h.hop*Math.PI);
+    h.g.position.set(x, h.top + hp*.7, h.z); h.g.rotation.z = hp*.5*dir; h.g.scale.x = dir; h.x0 = x-1; h.x1 = x+1;
+  }
+  // lasers: glow pulses, the gate blinks, the sweeper spins
+  M.laserGlow.opacity = .28 + Math.sin(T*24)*.08;
+  for(const h of hazards){
+    if(h.gate){
+      h.u = ((T + h.ph) % 2.8 + 2.8) % 2.8; const was = h.on; h.on = h.u < 1.4; const warn = !h.on && h.u > 2.35;
+      h.beams.visible = h.on || (warn && Math.sin(T*45) > 0);
+      for(const l of h.lights) l.material.color.set(h.on ? 0xff4040 : warn ? 0xffb020 : 0x40ff70);
+      if(h.on && !was && state === 'play' && Math.abs(h.z0 - p.z) < 14) beep(180,.18,'sawtooth',.03,120);
+    }
+    if(h.sweep){ h.ang = T*h.w + h.ph; h.g.rotation.y = h.ang; }
+  }
+  for(const b of blocks){ b.bump = Math.max(0, b.bump - dt*4); b.mesh.position.y = b.by + Math.sin(b.bump*Math.PI)*.35; }
+  for(const c of cashes) if(!c.taken){
+    if(c.kind === 'cash'){ c.m.rotation.y = T*2.2 + c.ph; c.g.position.y = c.y + Math.sin(T*2.4 + c.ph)*.14; }
+    else if(c.kind === 'gem'){ c.m.rotation.y = T*1.8 + c.ph; c.g.position.y = c.y + Math.sin(T*2 + c.ph)*.15; }
+    else c.g.rotation.z = Math.sin(T*1.8 + c.ph)*.12;
+  }
+  for(const pd of pads){ pd.squash = Math.max(0, pd.squash - dt*3); pd.g.scale.y = 1 - Math.sin(pd.squash*Math.PI)*.55; }
+  for(const c of chands){
+    const a = Math.sin(T*1.1 + c.ph)*.09; c.sw.rotation.z = a; c.sw.rotation.x = Math.cos(T*.8 + c.ph)*.05;
+    c.t -= dt;
+    if(c.t <= 0){ c.t = rnd(1.2,2.8); if(Math.abs(c.z - p.z) < 45){ const an = rnd(0,6.28), r = rnd(.6,1.8); spawnItem('banana', c.x + Math.cos(an)*r + Math.sin(a)*8, c.y - 1.2, c.z + Math.sin(an)*r, {vy:-1.5, drop:true}); } }
+  }
+  for(const n of npcs){
+    const near = state === 'play' && Math.hypot(n.x-p.x, n.z-p.z) < 9 && Math.abs(n.top-p.y) < 5;
+    if(near && !n.near){ n.pop = 1; beep(95,.3,'sawtooth',.07,45); }
+    n.near = near; n.pop = Math.max(0, n.pop - dt*2.5);
+    n.g.position.y = n.top + Math.abs(Math.sin(T*3 + n.ph))*.12 + Math.sin(n.pop*Math.PI)*.6; n.g.rotation.z = Math.sin(T*2.2 + n.ph)*.07;
+    n.bub.visible = near; const bs = 1 + Math.sin(T*7)*.06; n.bub.scale.set(2.4*bs, 1.5*bs, 1);
+  }
+  for(const a of axos){
+    for(const gi of a.a.gills) gi.gl.rotation.z = gi.base + Math.sin(T*6 + a.ph + gi.base*3)*.16;
+    if(a.found) continue;
+    a.a.g.position.y = a.top + Math.abs(Math.sin(T*2.5 + a.ph))*.12; a.a.g.rotation.y = Math.PI + Math.sin(T*.9 + a.ph)*.5;
+    a.gl.material.opacity = .45 + Math.sin(T*3 + a.ph)*.2;
+    if(state === 'play' && p.dead <= 0 && Math.hypot(a.x-p.x, a.z-p.z) < 1.15 && Math.abs(a.top - p.y) < 1.6){
+      a.found = true; a.slot = ++axoFound; a.gl.visible = false; a.a.g.scale.setScalar(.75);
+      [1175,1480,1760,2349].forEach((f,i) => beep(f,.12,'sine',.06,null,i*.07)); burst(a.x, a.top+.8, a.z, 18, 3.5, [6,2,5]);
+      floatText(axoFound === 5 ? 'ALL 5 AXOLOTLS!' : 'AXOLOTL ' + axoFound + '/5!', a.x, a.top+2.2, a.z, '#ff9cc8');
+    }
+  }
+  for(const r of richGuys){
+    r.g.position.y = r.y + Math.sin(T*1.3 + r.ph)*.3; r.armR.rotation.z = 2.2 + Math.sin(T*9)*.5;
+    r.t -= dt;
+    if(r.t <= 0){ r.t = rnd(.25,.55); if(Math.abs(r.z - p.z) < 38) spawnItem(Math.random() < .3 ? 'gold' : 'bill', r.x + r.dir*.6, r.g.position.y + 1.8, r.z + rnd(-.5,.5), {vy:rnd(4,7), vx:r.dir*rnd(7,15), vz:rnd(-5,5), drop:true}); }
+  }
+  for(const c of skyClouds) c.g.position.x = c.bx + Math.sin(T*.25 + c.ph)*1.5;
+  miniKings.forEach(mk => { const h = Math.abs(Math.sin(T*(state === 'win' ? 7 : 3) + mk.ph)); mk.k.g.position.y = 13 + h*(state === 'win' ? .9 : .25); animKing(mk.k, 0, 0, state === 'win' || h > .6, T); });
+  spinners.forEach((b,i) => { b.rotation.x += dt*.15; b.rotation.y += dt*(.1 + i*.01); });
+  sunRays.rotation.z += dt*.15; const sc = 1 + Math.sin(T*1.5)*.02; sun.scale.set(sc,sc,sc);
+  if(jackpot){ const fade = !firstPerson && state === 'play' && -p.z > jackpot.d0 - 3.5 && -p.z < jackpot.d1 + 1; for(const m of [M.house, M.houseRoof]){ m.opacity += ((fade ? .22 : 1) - m.opacity)*Math.min(1, dt*8); m.depthWrite = m.opacity > .9; } }
+
+  // rain: money + bananas from the sky
+  // money, bananas, GOLD and silver all fall from the sky
+  const cnt = {bill:0, banana:0, gold:0, silver:0}; for(const it of items) cnt[it.type]++;
+  const big = state === 'win' ? 2 : 1;
+  for(let i=0; i<3 && cnt.bill < 80*big; i++, cnt.bill++) spawnItem('bill', p.x + rnd(-16,16), p.y + (T < .5 ? rnd(0,22) : rnd(15,22)), p.z + rnd(-48,9));
+  const rain = (type, max, rate, spread) => { if(cnt[type] < max*big && Math.random() < dt*rate*big){ cnt[type]++; spawnItem(type, p.x + rnd(-spread,spread), p.y + rnd(15,22), p.z + rnd(-44,6)); } };
+  rain('banana', 14, 5, 12); rain('gold', 18, 9, 8); rain('silver', 12, 6, 10);
+  for(const it of items){
+    if(it.landed){ it.life -= dt; if(it.life < .6) it.m.scale.setScalar(Math.max(.01, it.life/.6)); if(it.life <= 0) it.gone = true; }
+    else {
+      const y0 = it.y;
+      if(it.type === 'bill'){ it.vy = Math.max(it.vy - 14*dt, -3); it.x += (it.vx + Math.sin(T*2.2 + it.ph)*.9)*dt; it.z += it.vz*dt; it.vx *= 1-2*dt; it.vz *= 1-2*dt; it.m.rotation.x += dt*2.3; it.m.rotation.y += dt*1.4; }
+      else { if(it.drop) it.vy = Math.max(it.vy - 14*dt, -9); it.x += it.vx*dt; it.z += it.vz*dt; it.vx *= 1 - .8*dt; it.vz *= 1 - .8*dt; it.m.rotation.x += dt*3; it.m.rotation.z += dt*2.2; }
+      it.y += it.vy*dt;
+      const ly = it.vy < 0 ? landTop(it.x, it.z, y0-.12, it.y-.12) : null;
+      if(ly !== null){ it.landed = true; it.life = 6;
+        if(it.type === 'bill'){ it.y = ly+.06; it.m.rotation.set(-Math.PI/2, 0, rnd(0,6)); }
+        else if(it.type === 'banana'){ it.y = ly+.16; it.m.rotation.set(Math.PI/2, 0, rnd(0,6)); }
+        else if(it.type === 'gold'){ it.y = ly+.1; it.m.rotation.set(0, rnd(0,6), 0); }
+        else { it.y = ly+.04; it.m.rotation.set(Math.PI/2, 0, 0); } }
+      if(it.y < p.y - 30 || it.z > p.z + 16 || it.z < p.z - 70) it.gone = true;
+    }
+    it.m.position.set(it.x, it.y, it.z);
+    if(state === 'play' && p.dead <= 0 && !it.gone && Math.abs(it.x-p.x) < .85 && Math.abs(it.z-p.z) < .85 && it.y > p.y-.3 && it.y < p.y+2.2){
+      it.gone = true;
+      if(it.type === 'banana'){ bananas++; money += 5; beep(700,.1,'triangle',.07,1100); burst(it.x,it.y,it.z,5,3,[4,2]); floatText('+5', it.x, it.y+.6, it.z); }
+      else if(it.type === 'gold'){ golds++; money += 3; beep(1046,.07,'triangle',.06); beep(1568,.12,'triangle',.05,null,.05); burst(it.x,it.y,it.z,4,2.5,[0,4]); floatText('+$3', it.x, it.y+.6, it.z, '#ffd447'); }
+      else if(it.type === 'silver'){ money += 2; beep(1760,.08,'sine',.05,2400); floatText('+$2', it.x, it.y+.6, it.z, '#e6ecf5'); }
+      else { money += 1; beep(1300,.05,'square',.025); }
+    }
+  }
+  items = items.filter(it => { if(it.gone){ it.m.visible = false; pools[it.type].push(it.m); } return !it.gone; });
+  for(const q of parts){ q.life -= dt; q.vy -= 16*dt; q.m.position.x += q.vx*dt; q.m.position.y += q.vy*dt; q.m.position.z += q.vz*dt; q.m.rotation.x += dt*9; q.m.rotation.y += dt*7; if(q.life <= 0) scene.remove(q.m); }
+  parts = parts.filter(q => q.life > 0);
+  for(const f of floats){ f.life -= dt; f.s.position.y += dt*2; f.s.material.opacity = Math.min(1, f.life*2.5); if(f.life <= 0){ scene.remove(f.s); f.s.material.dispose(); } }
+  floats = floats.filter(f => f.life > 0);
+
+  if(state === 'title'){ animKing(king, 0, 0, false, T); son.g.position.set(p.x+1.1, p.y + Math.abs(Math.sin(T*4))*.3, p.z+.2); son.g.rotation.y = 0; animKing(son, 0, 0, Math.abs(Math.sin(T*4)) > .5, T); return; }
+  if(state === 'win'){
+    winT += dt; p.vy -= GRAV*dt; p.y += p.vy*dt; if(p.y <= 13){ p.y = 13; p.vy = 8.5; }
+    animKing(king, 0, 0, true, T);
+    son.g.position.set(p.x+1.4, 13 + Math.abs(Math.sin(T*7))*.8, p.z+.4); son.g.rotation.y = Math.PI; animKing(son, 0, 0, true, T);
+    for(const a of axos) if(a.found){ const an = T*1.5 + a.slot*1.26; a.a.g.position.set(p.x + Math.cos(an)*2.6, 13 + Math.abs(Math.sin(T*6 + a.slot))*.5, p.z + Math.sin(an)*2.6); a.a.g.rotation.y = -an; }
+    if(Math.random() < dt*30) burst(p.x + rnd(-6,6), p.y + rnd(4,7), p.z + rnd(-3,5), 2, 2.5, [0,1,3,5,6]);
+    return;
+  }
+  playT += dt;
+
+  if(p.dead > 0){
+    p.dead -= dt; p.vy -= GRAV*dt; p.y += p.vy*dt; p.z += p.vz*dt; king.g.rotation.x -= dt*14;
+    if(p.dead <= 0) respawn();
+    return;
+  }
+
+  // run
+  let tx = (keys.right?1:0) - (keys.left?1:0), tz = (keys.back?1:0) - (keys.fwd?1:0); const l = Math.hypot(tx,tz);
+  if(l > 0){ tx = tx/l*SPEED; tz = tz/l*SPEED; }
+  const acc = (p.ground ? 60 : 30)*dt;
+  p.vx = approach(p.vx, tx, acc); p.vz = approach(p.vz, tz, acc);
+  if(l > 0){ const want = Math.atan2(-tx,-tz); let d = want - p.heading; while(d > Math.PI) d -= 2*Math.PI; while(d < -Math.PI) d += 2*Math.PI; p.heading += d*Math.min(1, dt*14); }
+  const sp = Math.hypot(p.vx, p.vz); p.phase += sp*dt*1.7;
+
+  // jump + double jump
+  jumpBuf -= dt; p.coyote -= dt;
+  if(jumpBuf > 0){
+    if(p.coyote > 0){ p.vy = JUMP; p.jumps = 1; p.coyote = 0; jumpBuf = 0; p.bounced = false; p.ground = null; beep(420,.12,'square',.04,760); }
+    else if(p.jumps < 2){ p.vy = JUMP2; p.jumps = 2; jumpBuf = 0; p.bounced = false; beep(620,.14,'square',.04,1150); burst(p.x, p.y, p.z, 8, 2.5, [0,2]); }
+  }
+  p.vy = Math.max(-40, p.vy - GRAV*dt);
+
+  // move + collide, one axis at a time
+  const side = (axis, v) => { for(const s of solids) if(hit(s)){
+    if(s.y1 - p.y <= .35 && p.vy <= 2){ p.y = s.y1; p.vy = 0; continue; } // ledge forgiveness
+    if(axis === 'x'){ if(v > 0) p.x = s.x0 - HW; else if(v < 0) p.x = s.x1 + HW; p.vx = 0; }
+    else { if(v > 0) p.z = s.z0 - HW; else if(v < 0) p.z = s.z1 + HW; p.vz = 0; }
+  } };
+  p.x += p.vx*dt; side('x', p.vx);
+  p.z += p.vz*dt; side('z', p.vz);
+  p.y += p.vy*dt; p.ground = null;
+  for(const s of solids) if(hit(s)){
+    if(p.vy <= 0){ p.y = s.y1; p.vy = 0; p.ground = s; }
+    else {
+      p.y = s.y0 - HT; p.vy = -1;
+      if(s.block && !s.used){
+        s.used = true; s.bump = 1; s.mesh.material = M.used; money += 50;
+        beep(880,.08,'square',.06); beep(1320,.2,'square',.06,null,.07);
+        const cx = (s.x0+s.x1)/2, cz = (s.z0+s.z1)/2;
+        burst(cx, s.y1+.2, cz, 12, 4, [0,1,4]); floatText('+$50', cx, s.y1+1.2, cz, '#7dff8a');
+        for(let i=0;i<6;i++) spawnItem(i%2 ? 'gold' : 'bill', cx, s.y1+.4, cz, {vy:rnd(5,8), vx:rnd(-3,3), vz:rnd(-3,3), drop:true});
+      }
+    }
+  }
+  if(p.ground){ p.coyote = .1; p.jumps = 0; p.bounced = false; }
+  else if(p.coyote <= 0 && p.jumps === 0) p.jumps = 1; // walked off an edge: one air jump left
+
+  // banana bounce pads
+  for(const pd of pads) if(p.ground && Math.abs(p.y - pd.top) < .06 && Math.abs(p.x-pd.x) < 1.2 && Math.abs(p.z-pd.z) < 1.2){
+    p.vy = 21; p.ground = null; p.jumps = 1; p.coyote = 0; p.bounced = true; pd.squash = 1;
+    beep(200,.35,'sine',.09,900); burst(pd.x, pd.top+.4, pd.z, 10, 4, [4,0]); floatText('BOING!', pd.x, pd.top+2, pd.z);
+  }
+  // sky money + hanging bananas
+  for(const c of cashes) if(!c.taken && Math.abs(c.x-p.x) < .95 && Math.abs(c.z-p.z) < .95 && c.y > p.y-.4 && c.y < p.y+2.3){
+    c.taken = true; c.g.visible = false;
+    if(c.kind === 'cash'){ money += 10; beep(988,.07,'square',.05); beep(1319,.16,'square',.05,null,.06); burst(c.x,c.y,c.z,7,3,[1,0,2]); floatText('+$10', c.x, c.y+.7, c.z, '#7dff8a'); }
+    else if(c.kind === 'gem'){ money += 25; [1568,2093,2637].forEach((f,i) => beep(f,.12,'triangle',.05,null,i*.06)); burst(c.x,c.y,c.z,12,3.5,[5,6,2]); floatText('CRYSTAL +$25', c.x, c.y+.8, c.z, '#9ff6ff'); }
+    else { bananas++; money += 5; beep(700,.1,'triangle',.07,1100); burst(c.x,c.y,c.z,6,3,[4,2]); floatText('+5', c.x, c.y+.7, c.z); }
+  }
+  // the money house jackpot
+  if(jackpot && !jackpot.taken && Math.abs(p.x) < 1.8 && Math.abs(p.z - jackpot.z) < 1 && Math.abs(p.y - jackpot.top) < 2){
+    jackpot.taken = true; jackpot.glow.visible = false; money += 100;
+    [784,988,1175,1568].forEach((f,i) => beep(f,.18,'square',.06,null,i*.08));
+    floatText('JACKPOT! +$100', p.x, p.y+2.4, p.z, '#7dff8a'); burst(p.x, p.y+1.5, p.z, 24, 4, [1,0,4]);
+    for(let i=0;i<14;i++) spawnItem(i%3 ? 'bill' : 'gold', rnd(-1.6,1.6), jackpot.top + rnd(1.4,2.6), jackpot.z + rnd(-2,2), {vy:rnd(0,2), vx:rnd(-1,1), vz:rnd(-1,1), drop:true});
+  }
+  // spikes, cars + falling
+  for(const h of hazards){
+    if(h.gate && !h.on) continue;
+    let touch;
+    if(h.sweep){ const rx = p.x, rz = p.z - h.cz, c = Math.cos(h.ang), s = Math.sin(h.ang), along = rx*c - rz*s, perp = rx*s + rz*c;
+      touch = Math.abs(along) < h.R + HW && Math.abs(perp) < HW + .08 && p.y < h.y1 && p.y+HT > h.y0; }
+    else touch = p.x+HW-.08 > h.x0 && p.x-HW+.08 < h.x1 && p.z+HW-.08 > h.z0 && p.z-HW+.08 < h.z1 && p.y < h.y1 && p.y+HT > h.y0;
+    if(!touch || p.dead > 0) continue;
+    if(h.car) beep(520,.12,'square',.06,500);
+    if(h.laser || h.gate || h.sweep){ beep(1400,.25,'sawtooth',.05,150); floatText('ZAP!', p.x, p.y+3.3, p.z, '#ff6a6a'); }
+    ouch();
+  }
+  if(p.y < checkpoints[cp].top - 14){ bonks++; beep(500,.5,'sine',.07,80); respawn(); }
+  // checkpoints + goal
+  for(let i=cp+1;i<checkpoints.length;i++){ const c = checkpoints[i];
+    if(-p.z > c.d && Math.abs(p.y - c.top) < 1.5 && p.ground){ cp = i; c.reached = true; c.mat.color.set(0xffc928); c.mat.emissive.set(0x4a3000);
+      beep(660,.1,'triangle',.07); beep(990,.25,'triangle',.07,null,.1); burst(c.sx, c.top+2, -c.d-.6, 24, 5, [0,4,2]); floatText('CHECKPOINT!', p.x, p.y+2.8, p.z); } }
+  if(-p.z > GOAL_D && p.y > 12.5 && p.ground){
+    state = 'win'; winT = 0; Object.assign(p, {x:0, y:13, z:-(C+19), vx:0, vz:0, vy:8.5, heading:Math.PI}); camSnap = true;
+    [523,659,784,1047,784,1047,1319].forEach((f,i) => beep(f,.28,'square',.06,null,i*.14)); showUI(); return;
+  }
+  animKing(king, p.phase, Math.min(1, sp/SPEED), !p.ground, T);
+  // the son copies whatever the king did a moment ago
+  // ...and every axolotl you found follows behind him in a line
+  hist.push({t:T, x:p.x, y:p.y, z:p.z, h:p.heading, air:!p.ground, ph:p.phase, mv:Math.min(1, sp/SPEED)});
+  while(hist.length > 2 && hist[1].t < T - .52) hist.shift();
+  const at = t => { for(const h of hist) if(h.t >= t) return h; return hist[hist.length-1]; };
+  const s0 = at(T - .42) || sonS;
+  son.g.position.set(s0.x + .7, s0.y, s0.z + .3); son.g.rotation.y = s0.h; animKing(son, s0.ph*1.5, s0.mv, s0.air, T);
+  // the axolotls walk along the king's path, spaced out by distance, so they stay in a line even when he stops
+  const last = trail[trail.length-1];
+  if(!last || Math.hypot(p.x-last.x, p.y-last.y, p.z-last.z) > .15){ trail.push({x:p.x, y:p.y, z:p.z, h:p.heading}); if(trail.length > 60) trail.shift(); }
+  for(const a of axos) if(a.found){
+    const i = trail.length - 1 - Math.round((1.4 + .85*(a.slot-1)) / .15), base = trail[0] || sonS;
+    const s = i >= 0 ? trail[i] : {x:base.x, y:base.y, z:base.z - i*.15, h:base.h};
+    a.a.g.position.set(s.x + (a.slot % 2 ? -.25 : .25), s.y, s.z); a.a.g.rotation.y = s.h;
+  }
+}
+
+// ---------- camera + render ----------
+const lookV = new THREE.Vector3();
+function render(dt){
+  if(state === 'title'){ const a = Math.PI + Math.sin(T*.35)*1.1; camera.position.set(p.x + .5 + Math.sin(a)*6, p.y+2.3, p.z + Math.cos(a)*6); lookV.set(p.x+.5, p.y+1.2, p.z); }
+  else if(state === 'win'){ const a = Math.sin(winT*.5)*.8; camera.position.set(p.x + Math.sin(a)*8.5, 13+2.6, p.z + Math.cos(a)*8.5); lookV.set(p.x, 13+1.9, p.z); }
+  else {
+    const k = camSnap ? 1 : Math.min(1, dt*7); camX += (p.x - camX)*k; camY += (p.y - camY)*(camSnap ? 1 : Math.min(1, dt*4.5)); camSnap = false;
+    if(firstPerson){ camera.position.set(p.x, p.y+1.62, p.z-.1); lookV.set(p.x, p.y+.7, p.z-7); }
+    else { camera.position.set(camX, camY+3.7, p.z+7.6); lookV.set(camX, camY+1.2, p.z-5); }
+  }
+  camera.lookAt(lookV);
+  // hide a bonus block or the laser-gate ceiling while the chase camera is inside it or right behind it
+  const chase = state === 'play' && !firstPerson, c = camera.position;
+  for(const o of occluders) o.mesh.visible = !(chase && c.x > o.x0 - 1.2 && c.x < o.x1 + 1.2 && c.y > o.y0 - 1.2 && c.y < o.y1 + .6 && c.z > o.z0 - .3 && c.z < o.z1 + 3);
+  king.g.visible = !(firstPerson && state === 'play');
+  king.g.position.set(p.x, p.y, p.z); king.g.rotation.y = p.heading;
+  const gy = groundBelow(p.x, p.y, p.z);
+  blob.visible = gy > -1e8 && p.dead <= 0;
+  if(blob.visible){ const h = p.y - gy, s = Math.max(.35, 1 - h*.09); blob.position.set(p.x, gy+.07, p.z); blob.scale.set(s,s,s); }
+  sunLight.position.set(p.x-9, p.y+40, p.z-22); sunLight.target.position.set(p.x, p.y, p.z-6);
+  sun.position.set(camera.position.x + 70, camera.position.y + 135, camera.position.z - 520);
+  renderer.render(scene, camera);
+  if(state === 'play'){
+    $('money').textContent = money; $('ban').textContent = bananas; $('ouch').textContent = bonks; $('gold').textContent = golds; $('axo').textContent = axoFound; $('t').textContent = playT.toFixed(1) + 's';
+    const f = Math.max(0, Math.min(1, -p.z/GOAL_D)); $('fill').style.width = f*100 + '%'; $('crown').style.left = f*100 + '%';
+    $('hint').style.opacity = playT < 9 ? 1 : 0;
+  }
+}
+function showUI(){
+  const play = state === 'play', touch = isTouch(), go = touch ? 'TAP' : 'PRESS SPACE';
+  const controls = touch ? '◀ ▶ steer &nbsp;·&nbsp; ▲ run &nbsp;·&nbsp; JUMP (tap again in the air = double jump) &nbsp;·&nbsp; 👁 change view'
+                         : 'W / ↑ run &nbsp;·&nbsp; A D / ← → steer &nbsp;·&nbsp; SPACE jump (twice = double jump) &nbsp;·&nbsp; V change view';
+  for(const id of ['hud','time','bar']) $(id).style.display = play ? 'block' : 'none';
+  document.body.classList.toggle('playing', play);
+  $('hint').textContent = !play ? '' : touch ? '◀ ▶ steer  ·  ▲ run  ·  JUMP  ·  JUMP again in the air = DOUBLE JUMP  ·  👁 = see through the king\'s eyes'
+                                            : 'W / ↑ run forward  ·  A D / ← → steer  ·  SPACE jump  ·  SPACE again in the air = DOUBLE JUMP  ·  V = see through the king\'s eyes';
+  const o = $('overlay'); o.style.display = play ? 'none' : 'flex';
+  if(state === 'title') o.innerHTML = '<div><h1>BANANA KING <b>3D</b></h1><p class="by">A game by Ashton</p></div><div><p>Jump over spikes and lasers. Grab the money, gold and crystals. Find all 5 axolotls. Reach the castle to win!</p><p>' + controls + '</p><p class="go">' + go + ' TO START</p></div>';
+  if(state === 'win') o.innerHTML = '<div><h1>YOU WIN!</h1><p style="font-size:min(5vw,34px);color:#7dff6a">All hail the Banana King and his son! 👑</p></div><div><p>Money: $' + money + ' &nbsp;·&nbsp; Gold: ' + golds + ' &nbsp;·&nbsp; Bananas: ' + bananas + ' &nbsp;·&nbsp; Axolotls: ' + axoFound + '/5 &nbsp;·&nbsp; Ouches: ' + bonks + ' &nbsp;·&nbsp; Time: ' + playT.toFixed(1) + 's</p>' + (axoFound === 5 ? '<p style="color:#ff9cc8">You found every axolotl! 🎉</p>' : '') + '<p class="go">' + go + ' TO PLAY AGAIN</p></div>';
+}
+showUI();
+
+let last = performance.now();
+function frame(now){
+  let dt = Math.min(.05, (now-last)/1000); last = now; const full = dt;
+  while(dt > 1e-5){ const s = Math.min(dt, 1/90); update(s); dt -= s; }
+  render(full); requestAnimationFrame(frame);
+}
+requestAnimationFrame(frame);
+window.__game = {p, keys, update, render, pressJump, toggleView, solids, hazards, checkpoints, pads, camera, axos, cashes, items: () => items,
+  tp: i => { cp = i; respawn(); }, info: () => ({state, money, bananas, bonks, cp, x:p.x, y:p.y, z:p.z, t:playT, items:items.length, first:firstPerson, gold:golds, axo:axoFound})};
+</script>
+</body>
+</html>
